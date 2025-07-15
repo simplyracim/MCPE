@@ -1,0 +1,138 @@
+/* ====== Browser defaults ====== */
+
+
+
+/* ====== Reset ====== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ====== Base Typography ====== */
+:root {
+  --font-family: 'Roboto', Roboto, sans-serif;
+  --font-size: 16px;
+  --color-bg: #201c1c;
+  --color-text: #ffffff;
+  --color-accent: #007bff;
+  --spacing: 0rem;
+}
+
+.main-content {
+  margin-left: 16rem;
+  margin-top: 16rem;
+  min-height: 100vh;
+  padding: 2rem;
+  box-sizing: border-box;
+  background-color: #1f1f1f;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+  padding: var(--spacing);
+  background-color: var(--color-bg); /* Fallback */
+  background-image: url('/assets/backgrounds/main.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* ====== Headings ====== */
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+}
+
+/* ====== Links ====== */
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ====== Containers ====== */
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--spacing);
+}
+
+/* ====== Utility Classes ====== */
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 1rem; }
+.mt-3 { margin-top: 1rem; }
+.p-2 { padding: 0.5rem; }
+.p-3 { padding: 1rem; }
+
+.text-center { text-align: center; }
+.text-right  { text-align: right; }
+.text-left   { text-align: left; }
+
+/* ====== Navigation ====== */
+nav {
+  margin-bottom: 2rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #ddd;
+}
+
+nav a {
+  margin-right: 1rem;
+  font-weight: 500;
+}
+
+/* ====== Lists ====== */
+ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.list-group {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.list-group-item {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #ddd;
+  background: rgba(255, 255, 255, 0.966);
+}
+
+.list-group-item:last-child {
+  border-bottom: none;
+}
+
+/* ====== Buttons (optional) ====== */
+.btn {
+  padding: 0.5rem 1rem;
+  background: var(--color-accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn:hover {
+  background: #0056b3;
+}

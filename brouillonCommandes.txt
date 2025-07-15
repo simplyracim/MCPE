@@ -1,0 +1,32 @@
+SELECT 
+  employees.id AS employee_id,
+  employees.name,
+  login_info.email,
+  login_info.password_hash,
+  login_info.created_at
+FROM 
+  employees
+JOIN 
+  login_info ON employees.id = login_info.employee_id;
+
+/////////////////////////////////////////////////////////
+
+INSERT INTO login_info (id, employee_id, email, password_hash)
+VALUES
+  (1, 1, 'alice@example.com',   '$2b$10$abc123...'),
+  (2, 2, 'bob@example.com',     '$2b$10$def456...'),
+  (3, 3, 'carol@example.com',   '$2b$10$ghi789...'),
+  (4, 4, 'dave@example.com',    '$2b$10$jkl012...'),
+  (5, 5, 'eve@example.com',     '$2b$10$mno345...');
+
+/////////////////////////////////////////////////////////
+
+mysqldump -u admin -p mcpe_db > mcpe_db_backup_1.sql
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+SELECT CONCAT('TRUNCATE TABLE `', table_name, '`;')
+FROM information_schema.tables
+WHERE table_schema = 'mcpe_db';
+
+SET FOREIGN_KEY_CHECKS = 1;

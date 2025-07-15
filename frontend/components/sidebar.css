@@ -1,0 +1,142 @@
+/* sidebar.css */
+
+/* ======================================== SIDEBAR ======================================== */
+
+.sidebar-container {
+  position: relative; /* or remove entirely */
+  width: auto;
+  height: auto;
+  z-index: auto;
+  pointer-events: auto; /* Allow interaction */
+}
+
+.sidebar {
+  width: 16rem;
+  height: 100vh;
+  padding: 1rem;
+  background: url('./assets/backgrounds/sidebar.jpg') no-repeat center center fixed;
+  background-size: cover;
+  color: rgb(44, 0, 0);
+  flex-shrink: 0;
+  font-family: 'Roboto Condensed';
+  font-weight: 500;
+  transform: translateX(0); /* visible by default */
+  transition: transform 0.4s ease;
+  z-index: 1000;
+  position: fixed; /* ✅ REQUIRED for overlapping and removing from flow */
+  top: 0;
+  left: 0;
+  pointer-events: auto;        /* ✅ Ensure it's clickable */
+}
+
+  .sidebar h1,
+.sidebar h2,
+.sidebar h3,
+.sidebar h4,
+.sidebar h5,
+.sidebar h6 {
+  font-family: 'Libre Baskerville';
+}
+
+
+
+/* ======================================== LOGO CLUSTER ======================================== */
+
+  /* Logo image */
+  .sidebar .logo {
+    width: 7rem;
+    height: auto;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0.75rem;
+    margin-bottom: 1rem;
+
+  }
+  
+  /* Subtitle under logo */
+  .sidebar .logo-text {
+    display: block; /* Ensures it spans full width */
+    width: 100%;
+    font-family: 'Libre Baskerville', serif;
+    font-weight: 700;
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: -0.5rem;
+  }
+
+/* Subtitle under logo */
+.sidebar .logo-subtitle {
+    display: block; /* Ensures it spans full width */
+    width: 100%;
+    font-family: 'Roboto Condensed', serif;
+    font-size: 1rem;
+    text-align: center;
+    }
+
+/* ======================================== ACCOUNT CLUSTER ======================================== */
+  
+.profile-picture {
+  width: 10rem;
+  height: 10rem;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 50%;
+  padding: 0.4rem;
+  background-color: rgba(177, 0, 0, 0.473); /* soft background tint */
+  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.514); /* subtle shadow */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.profile-picture img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+  
+/* Separator line*/
+.fancy-hr {
+  opacity: 100%;
+  border: none;
+  height: 3px;
+  margin: 1rem 0;
+  background: linear-gradient(to right,
+  transparent 0%,
+  rgb(0, 0, 0) 15%,
+  rgb(0, 0, 0) 85%,
+  transparent 100%);
+
+}
+
+/* ======================================== OTHER ======================================== */
+
+.sidebar-toggle {
+  position: absolute;
+  top: 1rem;
+  right: -1.5rem;
+  width: 1.5rem;
+  height: 2rem;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  font-size: 1rem;
+  z-index: 1001;
+}
+
+.sidebar.collapsed {
+  transform: translateX(-100%);
+}
+
+.sidebar .nav-link {
+  color: white;
+}
+
+.sidebar .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}

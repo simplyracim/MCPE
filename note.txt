@@ -1,0 +1,7 @@
+backend :
+- node.js
+- nodemon : for auto-reloads
+- express : for routes
+- cors : for accepting frontend requests
+- faker : for generating fake data
+frontend :
