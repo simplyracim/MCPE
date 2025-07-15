@@ -2,18 +2,18 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/dbConfig');
 
-// GET /api/employees
+// ==================== GET ALL EMPLOYEES ====================
 router.get('/', (req, res) => {
   const sql = `
-  SELECT 
-    employees.id,
-    employees.name,
-    employees.is_admin,
-    roles.title AS role_title
-  FROM employees
-  LEFT JOIN roles ON employees.role_id = roles.id
-  ORDER BY employees.is_admin DESC, employees.name ASC;
-`;
+    SELECT 
+      employees.id,
+      employees.name,
+      employees.is_admin,
+      roles.title AS role_title
+    FROM employees
+    LEFT JOIN roles ON employees.role_id = roles.id
+    ORDER BY employees.is_admin DESC, employees.name ASC
+  `;
 
   db.query(sql, (err, results) => {
     if (err) {
@@ -21,6 +21,90 @@ router.get('/', (req, res) => {
       return res.status(500).send('Server error');
     }
     res.json(results);
+  });
+});
+
+// ==================== GET SINGLE EMPLOYEE ====================
+router.get('/:id', (req, res) => {
+  const sql = `
+    SELECT 
+      employees.id,
+      employees.name,
+      employees.is_admin,
+      roles.title AS role_title
+    FROM employees
+    LEFT JOIN roles ON employees.role_id = roles.id
+    WHERE employees.id = ?
+  `;
+
+  db.query(sql, [req.params.id], (err, results) => {
+    if (err) {
+      console.error('Error fetching employee:', err);
+      return res.status(500).send('Server error');
+    }
+    if (results.length === 0) return res.status(404).send('Employee not found');
+    res.json(results[0]);
+  });
+});
+
+// ==================== CREATE NEW EMPLOYEE ====================
+router.post('/', (req, res) => {
+  const { name, role_id, is_admin = 0 } = req.body;
+
+  if (!name) {
+    return res.status(400).send('Name is required');
+  }
+
+  const sql = `
+    INSERT INTO employees (name, role_id, is_admin)
+    VALUES (?, ?, ?)
+  `;
+
+  db.query(sql, [name, role_id, is_admin], (err, result) => {
+    if (err) {
+      console.error('Error creating employee:', err);
+      return res.status(500).send('Server error');
+    }
+
+    res.status(201).json({ id: result.insertId, name, role_id, is_admin });
+  });
+});
+
+// ==================== UPDATE EMPLOYEE ====================
+router.put('/:id', (req, res) => {
+  const { name, role_id, is_admin } = req.body;
+
+  const sql = `
+    UPDATE employees
+    SET name = ?, role_id = ?, is_admin = ?
+    WHERE id = ?
+  `;
+
+  db.query(sql, [name, role_id, is_admin, req.params.id], (err, result) => {
+    if (err) {
+      console.error('Error updating employee:', err);
+      return res.status(500).send('Server error');
+    }
+
+    if (result.affectedRows === 0) return res.status(404).send('Employee not found');
+
+    res.send('Employee updated successfully');
+  });
+});
+
+// ==================== DELETE EMPLOYEE ====================
+router.delete('/:id', (req, res) => {
+  const sql = `DELETE FROM employees WHERE id = ?`;
+
+  db.query(sql, [req.params.id], (err, result) => {
+    if (err) {
+      console.error('Error deleting employee:', err);
+      return res.status(500).send('Server error');
+    }
+
+    if (result.affectedRows === 0) return res.status(404).send('Employee not found');
+
+    res.send('Employee deleted successfully');
   });
 });
 

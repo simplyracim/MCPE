@@ -11,11 +11,15 @@ app.use(express.json());
 const employeeRoutes = require('./routes/employees');
 const roleRoutes = require('./routes/roles');
 const loginRoutes = require('./routes/login');
+const productRoutes = require('./routes/products');
+const orderRoutes = require('./routes/orders');
 
 // routes
 app.use('/routes/employees', employeeRoutes);
 app.use('/routes/roles', roleRoutes);
 app.use('/routes/login', loginRoutes);
+app.use('/routes/products', productRoutes);
+app.use('/routes/orders', orderRoutes);
 app.get('/routes', (req, res) => {
     res.send('Backend home page');
   });
