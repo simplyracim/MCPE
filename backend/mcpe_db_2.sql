@@ -74,6 +74,117 @@ INSERT INTO `login_info` VALUES (1,1,'racim.longou@gmail.com','hash','2025-07-10
 UNLOCK TABLES;
 
 --
+-- Table structure for table `orders`
+--
+
+DROP TABLE IF EXISTS `orders`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `orders` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `customer_name` varchar(100) NOT NULL,
+  `order_date` datetime DEFAULT CURRENT_TIMESTAMP,
+  `status` varchar(50) DEFAULT 'pending',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `orders`
+--
+
+LOCK TABLES `orders` WRITE;
+/*!40000 ALTER TABLE `orders` DISABLE KEYS */;
+/*!40000 ALTER TABLE `orders` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `product_components`
+--
+
+DROP TABLE IF EXISTS `product_components`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `product_components` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `initial_product_id` int NOT NULL,
+  `final_product_id` int NOT NULL,
+  `rate` decimal(10,2) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `final_product_id` (`final_product_id`,`initial_product_id`),
+  KEY `initial_product_id` (`initial_product_id`),
+  CONSTRAINT `product_components_ibfk_1` FOREIGN KEY (`final_product_id`) REFERENCES `products` (`id`),
+  CONSTRAINT `product_components_ibfk_2` FOREIGN KEY (`initial_product_id`) REFERENCES `products` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `product_components`
+--
+
+LOCK TABLES `product_components` WRITE;
+/*!40000 ALTER TABLE `product_components` DISABLE KEYS */;
+/*!40000 ALTER TABLE `product_components` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `product_orders`
+--
+
+DROP TABLE IF EXISTS `product_orders`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `product_orders` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `order_id` int NOT NULL,
+  `product_id` int NOT NULL,
+  `quantity` int DEFAULT '1',
+  PRIMARY KEY (`id`),
+  KEY `order_id` (`order_id`),
+  KEY `product_id` (`product_id`),
+  CONSTRAINT `product_orders_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `product_orders_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `product_orders`
+--
+
+LOCK TABLES `product_orders` WRITE;
+/*!40000 ALTER TABLE `product_orders` DISABLE KEYS */;
+/*!40000 ALTER TABLE `product_orders` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `products`
+--
+
+DROP TABLE IF EXISTS `products`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `products` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `description` text,
+  `quantity` int DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `sell_price` float DEFAULT NULL,
+  `buy_price` float DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `products`
+--
+
+LOCK TABLES `products` WRITE;
+/*!40000 ALTER TABLE `products` DISABLE KEYS */;
+/*!40000 ALTER TABLE `products` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `roles`
 --
 
@@ -106,4 +217,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-07-14 16:59:30
+-- Dump completed on 2025-07-15 17:05:53
