@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
+import ProductsTable from '../components/ProductsTable';
 
 export default function Products() {
   const [products, setProducts] = useState([]);
@@ -54,42 +54,7 @@ export default function Products() {
         </Button>
       </div>
       
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>ID</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Price</TableHead>
-            <TableHead>Stock</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {products.map((product) => (
-            <TableRow key={product.id}>
-              <TableCell>{product.id}</TableCell>
-              <TableCell className="font-medium">{product.name}</TableCell>
-              <TableCell>{product.description}</TableCell>
-              <TableCell>${product.price?.toFixed(2)}</TableCell>
-              <TableCell>{product.stock || 0}</TableCell>
-              <TableCell>
-                <div className="flex space-x-2">
-                  <Button variant="outline" asChild>
-                    <Link to={`/products/${product.id}/edit`}>Edit</Link>
-                  </Button>
-                  <Button 
-                    variant="destructive"
-                    onClick={() => handleDelete(product.id)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <ProductsTable products={products} onDelete={handleDelete} />
     </div>
   );
 }

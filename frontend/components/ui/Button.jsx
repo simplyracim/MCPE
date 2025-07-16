@@ -1,78 +1,47 @@
-import React from 'react';
-import { styled } from '../../styles/theme';
+import * as React from 'react';
+import { Slot } from '@radix-ui/react-slot';
+import { cva } from 'class-variance-authority';
+import { cn } from '../../lib/utils';
 
-const StyledButton = styled('button', {
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  borderRadius: '$md',
-  fontSize: '$base',
-  fontWeight: 500,
-  padding: '$2 $4',
-  transition: 'all 0.2s ease',
-  cursor: 'pointer',
-  variants: {
-    variant: {
-      primary: {
-        backgroundColor: '$primary',
-        color: 'white',
-        '&:hover': {
-          backgroundColor: '$primaryDark',
-        },
+const buttonVariants = cva(
+  'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background',
+  {
+    variants: {
+      variant: {
+        primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+        outline: 'border border-input hover:bg-accent hover:text-accent-foreground',
+        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        ghost: 'hover:bg-accent hover:text-accent-foreground',
+        link: 'underline-offset-4 hover:underline text-primary',
       },
-      secondary: {
-        backgroundColor: '$secondary',
-        color: 'white',
-        '&:hover': {
-          backgroundColor: '$secondaryDark',
-        },
-      },
-      ghost: {
-        backgroundColor: 'transparent',
-        color: '$text',
-        '&:hover': {
-          backgroundColor: '$gray100',
-        },
-      },
-      link: {
-        backgroundColor: 'transparent',
-        color: '$primary',
-        padding: 0,
-        '&:hover': {
-          textDecoration: 'underline',
-        },
+      size: {
+        md: 'h-10 py-2 px-4',
+        sm: 'h-9 px-3 rounded-md',
+        lg: 'h-11 px-8 rounded-md',
+        icon: 'h-10 w-10',
       },
     },
-    size: {
-      sm: {
-        fontSize: '$sm',
-        padding: '$1 $2',
-      },
-      md: {
-        fontSize: '$base',
-        padding: '$2 $4',
-      },
-      lg: {
-        fontSize: '$lg',
-        padding: '$3 $6',
-      },
+    defaultVariants: {
+      variant: 'primary',
+      size: 'md',
     },
-  },
-  defaultVariants: {
-    variant: 'primary',
-    size: 'md',
-  },
-});
+  }
+);
 
-const Button = React.forwardRef(({ children, ...props }, ref) => {
-  return (
-    <StyledButton ref={ref} {...props}>
-      {children}
-    </StyledButton>
-  );
-});
+const Button = React.forwardRef(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : 'button';
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size }), className)}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
 
 Button.displayName = 'Button';
 
-export { Button };
-export default Button;
+export { Button, buttonVariants };

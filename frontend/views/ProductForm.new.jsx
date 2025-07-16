@@ -24,7 +24,6 @@ export default function ProductForm() {
   const [availableProducts, setAvailableProducts] = useState([]);
   const [selectedComponent, setSelectedComponent] = useState('');
   const [componentRate, setComponentRate] = useState('');
-  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -82,7 +81,6 @@ export default function ProductForm() {
 
   const handleNumberChange = (e) => {
     const { name, value } = e.target;
-    // Only allow numbers and decimal points
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
       setFormData(prev => ({
         ...prev,
@@ -172,7 +170,6 @@ export default function ProductForm() {
         throw new Error(errorData.message || 'Something went wrong');
       }
 
-      // If this is a new product, we need to get its ID before adding components
       if (!isEdit) {
         const result = await response.json();
         navigate(`/products/edit/${result.id}`);
@@ -342,53 +339,25 @@ export default function ProductForm() {
                     ))}
                   </TableBody>
                 </Table>
-        </div>
-      )}
+              </div>
+            )}
+          </div>
+        )}
 
-      <div className="space-y-2">
-        <Label htmlFor="barcode">Barcode</Label>
-        <Input
-          id="barcode"
-          name="barcode"
-          value={formData.barcode}
-          onChange={handleChange}
-        />
-      </div>
-          />
+        <div className="flex justify-end gap-4 pt-6">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate('/products')}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Saving...' : isEdit ? 'Update Product' : 'Create Product'}
+          </Button>
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="supplier">Supplier</Label>
-          <Input
-            id="supplier"
-            name="supplier"
-            value={formData.supplier}
-            onChange={handleChange}
-          />
-        </div>
-        <Label htmlFor="supplier">Supplier</Label>
-        <Input
-          id="supplier"
-          name="supplier"
-          value={formData.supplier}
-          onChange={handleChange}
-        />
-      </div>
+      </form>
     </div>
-
-    <div className="flex justify-end gap-4 pt-6">
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => navigate('/products')}
-        disabled={loading}
-      >
-        Cancel
-      </Button>
-      <Button type="submit" disabled={loading}>
-        {loading ? 'Saving...' : isEdit ? 'Update Product' : 'Create Product'}
-      </Button>
-    </div>
-  </form>
-</div>
-);
+  );
+}
