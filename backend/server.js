@@ -15,12 +15,12 @@ const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 
 // routes
-app.use('/routes/employees', employeeRoutes);
-app.use('/routes/roles', roleRoutes);
-app.use('/routes/login', loginRoutes);
-app.use('/routes/products', productRoutes);
-app.use('/routes/orders', orderRoutes);
-app.get('/routes', (req, res) => {
+app.use('/api/employees', employeeRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/login', loginRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
+app.get('/api', (req, res) => {
     res.send('Backend home page');
   });
 

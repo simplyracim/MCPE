@@ -10,6 +10,9 @@ import {
   Calendar,
   HelpCircle,
   Mail,
+  Package,
+  ShoppingCart,
+  User,
   Settings as SettingsIcon
 } from 'lucide-react';
 
@@ -131,6 +134,14 @@ const navItems = [
       { icon: <Folder size={18} />, text: 'All Projects', to: '/projects' },
       { icon: <Users size={18} />, text: 'Team', to: '/team' },
       { icon: <Calendar size={18} />, text: 'Calendar', to: '/calendar' },
+    ],
+  },
+  {
+    title: 'Management',
+    items: [
+      { icon: <User size={20} />, text: 'Employees', to: '/employees' },
+      { icon: <Package size={20} />, text: 'Products', to: '/products' },
+      { icon: <ShoppingCart size={20} />, text: 'Orders', to: '/orders' },
     ],
   },
   {

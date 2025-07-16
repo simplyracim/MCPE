@@ -1,37 +1,79 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { globalStyles } from './styles/theme';
 import Layout from './components/Layout';
 
 // Import views
 import Home from './views/home';
 import Login from './views/login';
+import Employees from './views/employees';
+import EmployeeForm from './views/EmployeeForm';
+import Products from './views/products';
+import ProductForm from './views/ProductForm';
+import Orders from './views/orders';
+import OrderForm from './views/OrderForm';
 
 // Apply global styles
 globalStyles();
 
+// Simple auth check - replace with your actual auth logic
+const isAuthenticated = () => {
+  return !!localStorage.getItem('token');
+};
+
+// Protected route component
+const ProtectedRoute = ({ children }) => {
+  const location = useLocation();
+  
+  // if (!isAuthenticated()) {
+  //   return <Navigate to="/login" state={{ from: location }} replace />;
+  // }
+  
+  return children;
+};
+
 const AppRoutes = () => {
   const location = useLocation();
   const noLayoutRoutes = ['/login'];
-  const shouldShowLayout = !noLayoutRoutes.includes(location.pathname);
+  const shouldShowLayout = !noLayoutRoutes.some(route => location.pathname.startsWith(route));
 
   if (!shouldShowLayout) {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Login />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
   }
 
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="*" element={<Home />} />
-      </Routes>
-    </Layout>
+    <ProtectedRoute>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          
+          {/* Employee Routes */}
+          <Route path="/employees" element={<Employees />} />
+          <Route path="/employees/new" element={<EmployeeForm />} />
+          <Route path="/employees/:id/edit" element={<EmployeeForm />} />
+          
+          {/* Product Routes */}
+          <Route path="/products" element={<Products />} />
+          <Route path="/products/new" element={<ProductForm />} />
+          <Route path="/products/:id/edit" element={<ProductForm />} />
+          
+          {/* Order Routes */}
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/orders/new" element={<OrderForm />} />
+          <Route path="/orders/:id" element={<OrderForm />} />
+          <Route path="/orders/:id/edit" element={<OrderForm />} />
+          
+          {/* Fallback route */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Layout>
+    </ProtectedRoute>
   );
 };
 
