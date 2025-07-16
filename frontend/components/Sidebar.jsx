@@ -129,11 +129,6 @@ const navItems = [
     title: 'Main',
     items: [
       { icon: <Home size={18} />, text: 'Dashboard', to: '/' },
-      { icon: <BarChart2 size={18} />, text: 'Analytics', to: '/analytics' },
-      { icon: <FilePlus size={18} />, text: 'New Project', to: '/projects/new' },
-      { icon: <Folder size={18} />, text: 'All Projects', to: '/projects' },
-      { icon: <Users size={18} />, text: 'Team', to: '/team' },
-      { icon: <Calendar size={18} />, text: 'Calendar', to: '/calendar' },
     ],
   },
   {

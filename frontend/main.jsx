@@ -8,12 +8,8 @@ import './index.css';
 // Import views
 import Home from './views/home';
 import Login from './views/login';
-import Employees from './views/employees';
-import EmployeeForm from './views/EmployeeForm';
 import Products from './views/products';
 import ProductForm from './views/ProductForm';
-import Orders from './views/orders';
-import OrderForm from './views/OrderForm';
 
 // Apply global styles
 globalStyles();
@@ -54,21 +50,10 @@ const AppRoutes = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           
-          {/* Employee Routes */}
-          <Route path="/employees" element={<Employees />} />
-          <Route path="/employees/new" element={<EmployeeForm />} />
-          <Route path="/employees/:id/edit" element={<EmployeeForm />} />
-          
           {/* Product Routes */}
           <Route path="/products" element={<Products />} />
           <Route path="/products/new" element={<ProductForm />} />
           <Route path="/products/:id/edit" element={<ProductForm />} />
-          
-          {/* Order Routes */}
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/orders/new" element={<OrderForm />} />
-          <Route path="/orders/:id" element={<OrderForm />} />
-          <Route path="/orders/:id/edit" element={<OrderForm />} />
           
           {/* Fallback route */}
           <Route path="*" element={<Navigate to="/" replace />} />
