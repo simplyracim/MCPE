@@ -10,7 +10,7 @@ export function render() {
 }
 
 export function setup() {
-  fetch('http://localhost:3000/routes/employees')
+  fetch('http://localhost:4000/routes/employees')
     .then(res => res.json())
     .then(data => {
       const container = document.getElementById('employeeCards');

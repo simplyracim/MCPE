@@ -30,7 +30,7 @@ export function setup() {
       errorDiv.classList.add('hidden');
       errorDiv.textContent = '';
 
-      const res = await fetch('http://localhost:3000/routes/login', {
+      const res = await fetch('http://localhost:4000/routes/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

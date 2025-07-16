@@ -4,7 +4,7 @@ const { faker } = require('@faker-js/faker');
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
-  password: 'admin',
+  password: 'rootroot',
   database: 'mcpe_db'
 });
 
