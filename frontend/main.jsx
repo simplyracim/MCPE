@@ -10,8 +10,6 @@ import Home from './views/home';
 import Login from './views/login';
 import Products from './views/products';
 import ProductForm from './views/ProductForm';
-import Employees from './views/employees';
-import EmployeeForm from './views/EmployeeForm';
 import Orders from './views/orders';
 import OrderForm from './views/OrderForm';
 
@@ -53,11 +51,6 @@ const AppRoutes = () => {
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
-          
-          {/* Employee Routes */}
-          <Route path="/employees" element={<Employees />} />
-          <Route path="/employees/new" element={<EmployeeForm />} />
-          <Route path="/employees/:id/edit" element={<EmployeeForm />} />
           
           {/* Product Routes */}
           <Route path="/products" element={<Products />} />
