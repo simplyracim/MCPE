@@ -43,33 +43,55 @@ export default function OrderForm() {
     if (isEdit) {
       const fetchOrder = async () => {
         try {
+          setLoading(true);
+          console.log('Fetching order with ID:', id);
           const response = await fetch(`http://localhost:4000/api/orders/${id}`);
           if (!response.ok) throw new Error('Failed to fetch order');
           const data = await response.json();
           
+          console.log('API Response:', JSON.stringify(data, null, 2));
+          
           // Map the data to match our form structure
+          const formItems = data.products ? data.products.map(p => {
+            console.log('Processing product:', p.product_id, p.name, 'Components:', p.components);
+            return {
+              productId: p.product_id,  // Changed from p.id to p.product_id
+              name: p.name,
+              price: parseFloat(p.sell_price),
+              quantity: p.quantity,  // Changed from p.product_orders.quantity
+              buy_price: parseFloat(p.buy_price),
+              components: p.components || []
+            };
+          }) : [];
+          
+          console.log('Form items:', formItems);
+          
           setFormData({
             customer_name: data.customer_name,
             status: data.status,
-            items: data.products ? data.products.map(p => ({
-              productId: p.id,
-              name: p.name,
-              price: p.sell_price,
-              quantity: p.product_orders.quantity,
-              buy_price: p.buy_price
-            })) : []
+            items: formItems
           });
           
           // Pre-calculate component details for existing items
           if (data.products) {
             const details = {};
             for (const p of data.products) {
-              details[p.id] = await calculateComponents(p.id, p.product_orders.quantity);
+              console.log('Calculating components for product:', p.product_id);
+              // Create a product-like object with the correct structure
+              const productWithComponents = {
+                ...p,
+                id: p.product_id,
+                components: p.components || []
+              };
+              details[p.product_id] = await calculateComponents(productWithComponents, p.quantity);
+              console.log('Calculated details:', p.product_id, details[p.product_id]);
             }
             setComponentDetails(details);
           }
         } catch (err) {
           setError(err.message);
+        } finally {
+          setLoading(false);
         }
       };
       fetchOrder();
@@ -77,8 +99,36 @@ export default function OrderForm() {
   }, [id, isEdit]);
 
   // Calculate costs from product tree
-  const calculateComponents = async (product, qty = 1, parentRate = 1) => {
+  const calculateComponents = (product, qty = 1, parentRate = 1) => {
     try {
+      console.log('calculateComponents called with:', { 
+        id: product.id, 
+        name: product.name, 
+        qty, 
+        hasComponents: !!product.components,
+        componentCount: product.components?.length || 0
+      });
+      
+      // If product is already processed (has totalCost), return as is
+      if (product.totalCost !== undefined) {
+        console.log('Returning cached product:', product.id);
+        return product;
+      }
+      
+      // Ensure we have a valid product object
+      if (!product) {
+        console.error('Invalid product data:', product);
+        return {
+          id: 'unknown',
+          name: 'Unknown Product',
+          totalCost: 0,
+          totalRevenue: 0,
+          components: [],
+          quantity: qty,
+          rate: parentRate
+        };
+      }
+
       // Recursive function to calculate costs from the product tree
       const calculateCosts = (product, quantity, rate = 1) => {
         let totalCost = 0;
@@ -89,7 +139,7 @@ export default function OrderForm() {
           product.components.forEach(comp => {
             const compQty = quantity * (comp.rate || 1);
             const compCost = calculateCosts(comp, compQty, comp.rate);
-            totalCost += compCost.totalCost;
+            totalCost += compCost.totalCost || 0;
             components.push(compCost);
           });
         } else {
@@ -103,7 +153,7 @@ export default function OrderForm() {
           totalRevenue: (Number(product.sell_price) || 0) * quantity,
           components,
           quantity,
-          rate
+          rate: parentRate
         };
       };
       
@@ -312,11 +362,13 @@ export default function OrderForm() {
       const orderData = {
         customer_name: formData.customer_name,
         status: formData.status,
-        products: formData.items.map(item => ({
-          product_id: item.productId,
+        items: formData.items.map(item => ({
+          productId: item.productId,
           quantity: item.quantity
         }))
       };
+      
+      console.log('Submitting order:', orderData);
 
       const url = isEdit 
         ? `http://localhost:4000/api/orders/${id}`
@@ -324,13 +376,66 @@ export default function OrderForm() {
       
       const method = isEdit ? 'PUT' : 'POST';
       
-      const response = await fetch(url, {
+      // For new orders, we can send everything in one request
+      if (!isEdit) {
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(orderData),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to create order');
+        }
+        
+        return navigate('/orders');
+      }
+      
+      // For editing existing orders
+      // First update the order details
+      const orderResponse = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify({
+          customer_name: orderData.customer_name,
+          status: orderData.status
+        }),
       });
+      
+      if (!orderResponse.ok) {
+        const errorData = await orderResponse.json();
+        throw new Error(errorData.message || 'Failed to update order');
+      }
+      
+      // Then update the products
+      // First, clear existing products
+      const clearResponse = await fetch(`http://localhost:4000/api/orders/${id}/products`, {
+        method: 'DELETE'
+      });
+      
+      if (!clearResponse.ok) {
+        throw new Error('Failed to clear existing products from order');
+      }
+      
+      // Then add each product
+      for (const item of formData.items) {
+        const addResponse = await fetch(`http://localhost:4000/api/orders/${id}/products/${item.productId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ quantity: item.quantity })
+        });
+        
+        if (!addResponse.ok) {
+          throw new Error(`Failed to add product ${item.productId} to order`);
+        }
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -351,22 +456,22 @@ export default function OrderForm() {
       return null;
     }
     
-    // Handle case where component is just an ID (from initial data)
-    if (typeof component === 'number') {
-      const fullComponent = componentDetails[component]?.details || { id: component };
-      return renderComponentTree(fullComponent, level, parentPath);
-    }
+    const componentId = component.id || 'unknown';
+    const componentPath = `${parentPath}.${componentId}`;
     
-    const componentPath = `${parentPath}.${component.id || 'unknown'}`;
+    // Debug log
     console.log(`[${componentPath}] Rendering component at level ${level}:`, {
-      id: component.id,
+      id: componentId,
       name: component.name,
       rate: component.rate,
       quantity: component.quantity,
       buy_price: component.buy_price,
+      sell_price: component.sell_price,
+      price: component.price,
       totalCost: component.totalCost,
-      hasComponents: !!component.components?.length,
-      componentLevel: level
+      hasComponents: Array.isArray(component.components) && component.components.length > 0,
+      componentLevel: level,
+      componentType: typeof component
     });
     
     const displayRate = component.rate ? `${component.rate} × ` : '';
@@ -569,7 +674,7 @@ export default function OrderForm() {
                           <td className="px-6 py-4">
                             <div className="text-sm font-medium text-gray-900">
                               {item.name}
-                              {componentDetails[item.productId]?.components?.length > 0 && (
+                              {componentDetails[item.productId] && (
                                 <div className="mt-2 text-xs text-gray-500">
                                   {renderComponentTree({
                                     ...componentDetails[item.productId],
@@ -577,7 +682,9 @@ export default function OrderForm() {
                                     name: item.name,
                                     quantity: item.quantity,
                                     price: item.price,
-                                    buy_price: item.buy_price
+                                    sell_price: item.price, // Make sure sell_price is set
+                                    buy_price: item.buy_price,
+                                    components: componentDetails[item.productId]?.components || []
                                   })}
                                 </div>
                               )}

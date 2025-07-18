@@ -91,18 +91,63 @@ router.get('/:id', async (req, res) => {
 
 // ==================== CREATE NEW ORDER ====================
 router.post('/', (req, res) => {
-  const { customer_name, order_date, status } = req.body;
-  const sql = `
-    INSERT INTO orders (customer_name, order_date, status)
-    VALUES (?, ?, ?)
-  `;
-  db.query(sql, [customer_name, order_date || new Date(), status || 'pending'], (err, result) => {
-    if (err) {
-      console.error('Error creating order:', err);
-      return res.status(500).send('Server error');
+  const { customer_name, order_date, status, items } = req.body;
+  
+  // First, create the order
+  db.query(
+    'INSERT INTO orders (customer_name, order_date, status) VALUES (?, ?, ?)',
+    [customer_name, order_date || new Date(), status || 'pending'],
+    (err, result) => {
+      if (err) {
+        console.error('Error creating order:', err);
+        return res.status(500).send('Server error');
+      }
+      
+      const orderId = result.insertId;
+      
+      // If no items, return the order
+      if (!items || items.length === 0) {
+        return res.status(201).json({
+          id: orderId,
+          customer_name,
+          order_date: order_date || new Date(),
+          status: status || 'pending',
+          products: []
+        });
+      }
+      
+      // Add products to the order
+      let completed = 0;
+      let hadError = false;
+      
+      items.forEach((item, index) => {
+        db.query(
+          'INSERT INTO product_orders (order_id, product_id, quantity) VALUES (?, ?, ?)',
+          [orderId, item.productId, item.quantity],
+          (err) => {
+            if (err && !hadError) {
+              hadError = true;
+              console.error('Error adding product to order:', err);
+              return res.status(500).send('Error adding products to order');
+            }
+            
+            completed++;
+            
+            // When all products are processed
+            if (completed === items.length && !hadError) {
+              res.status(201).json({
+                id: orderId,
+                customer_name,
+                order_date: order_date || new Date(),
+                status: status || 'pending',
+                products: items
+              });
+            }
+          }
+        );
+      });
     }
-    res.status(201).json({ id: result.insertId, customer_name, order_date, status });
-  });
+  );
 });
 
 // ==================== UPDATE ORDER ====================
@@ -151,6 +196,21 @@ router.post('/:orderId/products/:productId', (req, res) => {
       return res.status(500).send('Server error');
     }
     res.send('Product added to order successfully');
+  });
+});
+
+// ==================== CLEAR ALL PRODUCTS FROM ORDER ====================
+router.delete('/:orderId/products', (req, res) => {
+  const { orderId } = req.params;
+
+  const sql = 'DELETE FROM product_orders WHERE order_id = ?';
+
+  db.query(sql, [orderId], (err, result) => {
+    if (err) {
+      console.error('Error clearing products from order:', err);
+      return res.status(500).send('Server error');
+    }
+    res.send('All products removed from order successfully');
   });
 });
 

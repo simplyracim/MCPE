@@ -164,7 +164,7 @@ export default function Orders() {
                       onClick={() => handleDelete(order.id)}
                       disabled={order.status === 'cancelled'}
                     >
-                      {order.status === 'cancelled' ? 'Cancelled' : 'Cancel'}
+                      {order.status === 'cancelled' ? 'Deleted' : 'Delete'}
                     </Button>
                   </div>
                 </TableCell>
