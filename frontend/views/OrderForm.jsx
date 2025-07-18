@@ -535,17 +535,327 @@ export default function OrderForm() {
     );
   };
 
+  const handlePrint = () => {
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    
+    // Get the current date in a readable format
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  
+    // Calculate order totals
+    const subtotal = calculateTotal();
+    const totalCost = calculateCost();
+    const profit = calculateProfit();
+  
+    // Function to convert React elements to HTML string
+    const renderComponentTreeToHTML = (component, level = 0) => {
+      if (!component) return '';
+      
+      const displayRate = component.rate ? `${component.rate} × ` : '';
+      const qty = component.quantity || 1;
+      const rate = component.rate || 1;
+      const displayTotal = (rate * qty).toFixed(2);
+      const totalCost = component.totalCost || 0;
+      const unitPrice = Number(component.buy_price || 0);
+      const sellPrice = Number(component.sell_price || component.price || 0);
+      
+      let html = `
+        <div style="margin-left: ${level * 15}px; padding-left: 4px; border-left: 1px solid #e2e8f0; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between;">
+            <div>
+              <span style="font-weight: 500;">${component.name || `Product ${component.id || ''}`.trim()}</span>
+              ${component.description ? `<span style="font-size: 12px; color: #64748b; margin-left: 4px;">(${component.description})</span>` : ''}
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 12px; color: #64748b;">
+                ${displayRate}${qty} = ${displayTotal} units
+              </div>
+              <div style="font-size: 11px; color: #94a3b8;">
+                Unit Cost: $${unitPrice.toFixed(2)}
+              </div>
+            </div>
+          </div>
+      `;
+      
+      if (component.components && component.components.length > 0) {
+        html += `
+          <div style="margin-top: 4px;">
+            <div style="font-size: 11px; font-weight: 500; color: #64748b; margin-bottom: 2px;">Components:</div>
+            ${component.components.map(comp => renderComponentTreeToHTML(comp, level + 1)).join('')}
+            <div style="font-size: 11px; color: #64748b; text-align: right; margin-top: 4px;">
+              Total Components Cost: $${totalCost.toFixed(2)}
+            </div>
+          </div>
+        `;
+      }
+      
+      if (level === 0) {
+        html += `
+          <div style="text-align: right; margin-top: 4px;">
+            <div style="font-size: 13px; font-weight: 500;">
+              Total Cost: $${totalCost.toFixed(2)}
+            </div>
+            <div style="font-size: 13px;">
+              Sell Price: $${(sellPrice * qty).toFixed(2)}
+            </div>
+            <div style="font-size: 13px; font-weight: 600;">
+              Profit: $${((sellPrice * qty) - totalCost).toFixed(2)}
+            </div>
+          </div>
+        `;
+      }
+      
+      html += `</div>`;
+      return html;
+    };
+  
+    // Generate the HTML content for printing
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Invoice</title>
+        <style>
+          @page {
+            size: A4;
+            margin: 0;
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 15mm;
+          }
+          .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+          }
+          .invoice-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+          }
+          .invoice-meta {
+            text-align: right;
+            font-size: 14px;
+            color: #7f8c8d;
+          }
+          .customer-info {
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+          }
+          .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 25px 0 15px 0;
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+          }
+          .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+          }
+          .items-table th {
+            background: #f8f9fa;
+            text-align: left;
+            padding: 12px 15px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+          }
+          .items-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: top;
+          }
+          .items-table tr:last-child td {
+            border-bottom: none;
+          }
+          .total-section {
+            margin-top: 30px;
+            margin-left: auto;
+            width: 300px;
+            border-top: 2px solid #eee;
+            padding-top: 15px;
+          }
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+          }
+          .total-label {
+            font-weight: 600;
+          }
+          .grand-total {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+          }
+          .signature-section {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+          }
+          .signature-line {
+            width: 250px;
+            border-top: 1px solid #333;
+            margin-top: 50px;
+            text-align: center;
+            padding-top: 5px;
+            font-size: 14px;
+          }
+          .footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #7f8c8d;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="invoice-header">
+          <div>
+            <div class="invoice-title">Order Invoice</div>
+            <div>Customer Name: ${formData.customer_name}</div>
+          </div>
+          <div class="invoice-meta">
+            <div>Date: ${currentDate}</div>
+            <div>Status: ${formData.status.toUpperCase()}</div>
+          </div>
+        </div>
+  
+        <div class="section-title">Order Items</div>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th style="text-align: right;">Price</th>
+              <th style="text-align: right;">Qty</th>
+              <th style="text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${formData.items.map(item => {
+              const details = componentDetails[item.productId];
+              const hasComponents = details?.components?.length > 0;
+              
+              return `
+                <tr>
+                  <td>
+                    <div style="font-weight: 500;">${item.name}</div>
+                    ${hasComponents ? `
+                      <div style="margin-top: 10px;">
+                        ${renderComponentTreeToHTML({
+                          ...details,
+                          id: item.productId,
+                          name: item.name,
+                          quantity: item.quantity,
+                          price: item.price,
+                          sell_price: item.price,
+                          buy_price: item.buy_price,
+                          components: details.components || []
+                        })}
+                      </div>
+                    ` : ''}
+                  </td>
+                  <td style="text-align: right;">$${item.price.toFixed(2)}</td>
+                  <td style="text-align: right;">${item.quantity}</td>
+                  <td style="text-align: right;">$${(item.price * item.quantity).toFixed(2)}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+  
+        <div class="total-section">
+          <div class="total-row">
+            <span class="total-label">Subtotal:</span>
+            <span>$${subtotal}</span>
+          </div>
+          <div class="total-row">
+            <span class="total-label">Total Cost:</span>
+            <span>$${totalCost}</span>
+          </div>
+          <div class="total-row grand-total">
+            <span>Estimated Profit:</span>
+            <span>$${profit}</span>
+          </div>
+        </div>
+  
+        <div class="signature-section">
+          <div>
+            <div style="font-weight: bold; margin-bottom: 5px; text-align: center">Signature</div>
+            <div class="signature-line">Company Representative</div>
+          </div>
+        </div>
+  
+        <div class="footer">
+          Thank you for your business! For any questions regarding this order, please contact us.
+        </div>
+  
+        <script>
+          // Remove browser header/footer from print
+          document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
+            }, 200);
+          });
+        </script>
+      </body>
+      </html>
+    `);
+  
+    printWindow.document.close();
+  };
+
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold">
-          {isEdit ? 'Edit Order' : 'Create New Order'}
-        </h2>
-        <p className="text-gray-600">
-          {isEdit 
-            ? 'Update order details'
-            : 'Fill in the details to create a new order'}
-        </p>
+    <div className="max-w-5xl mx-auto print-area">
+      <div className="mb-6 flex justify-between items-start">
+        <div>
+          <h2 className="text-2xl font-bold">
+            {isEdit ? 'Edit Order' : 'Create New Order'}
+          </h2>
+          <p className="text-gray-600">
+            {isEdit 
+              ? 'Update order details'
+              : 'Fill in the details to create a new order'}
+          </p>
+        </div>
+        {isEdit && (
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="print:hidden"
+            onClick={handlePrint}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clipRule="evenodd" />
+            </svg>
+            Print Order
+          </Button>
+        )}
       </div>
 
       {error && (
