@@ -11,16 +11,9 @@ export default function OrderForm() {
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
-    customerName: '',
-    customerEmail: '',
-    customerPhone: '',
-    shippingAddress: '',
+    customer_name: '',
     status: 'pending',
-    paymentMethod: 'credit_card',
     items: [],
-    notes: '',
-    shippingCost: '0',
-    tax: '0'
   });
 
   const [products, setProducts] = useState([]);
@@ -28,6 +21,7 @@ export default function OrderForm() {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [componentDetails, setComponentDetails] = useState({});
 
   // Fetch products for the dropdown
   useEffect(() => {
@@ -52,11 +46,28 @@ export default function OrderForm() {
           const response = await fetch(`http://localhost:4000/api/orders/${id}`);
           if (!response.ok) throw new Error('Failed to fetch order');
           const data = await response.json();
+          
+          // Map the data to match our form structure
           setFormData({
-            ...data,
-            shippingCost: data.shippingCost?.toString() || '0',
-            tax: data.tax?.toString() || '0'
+            customer_name: data.customer_name,
+            status: data.status,
+            items: data.products ? data.products.map(p => ({
+              productId: p.id,
+              name: p.name,
+              price: p.sell_price,
+              quantity: p.product_orders.quantity,
+              buy_price: p.buy_price
+            })) : []
           });
+          
+          // Pre-calculate component details for existing items
+          if (data.products) {
+            const details = {};
+            for (const p of data.products) {
+              details[p.id] = await calculateComponents(p.id, p.product_orders.quantity);
+            }
+            setComponentDetails(details);
+          }
         } catch (err) {
           setError(err.message);
         }
@@ -64,6 +75,55 @@ export default function OrderForm() {
       fetchOrder();
     }
   }, [id, isEdit]);
+
+  // Recursively fetch components and calculate costs
+  const calculateComponents = async (productId, qty = 1) => {
+    try {
+      const response = await fetch(`http://localhost:4000/api/products/${productId}/components`);
+      if (!response.ok) throw new Error('Failed to fetch components');
+      const components = await response.json();
+      
+      if (components.length === 0) {
+        // Base product - no components
+        const product = products.find(p => p.id === productId) || {};
+        return {
+          totalCost: (product.buy_price || 0) * qty,
+          totalRevenue: (product.sell_price || 0) * qty,
+          components: [],
+          quantity: qty
+        };
+      }
+      
+      // Calculate nested components
+      let totalCost = 0;
+      const nestedComponents = [];
+      
+      for (const comp of components) {
+        const compDetails = await calculateComponents(comp.final_product_id, qty * comp.rate);
+        totalCost += compDetails.totalCost;
+        nestedComponents.push({
+          ...comp,
+          details: compDetails
+        });
+      }
+      
+      const product = products.find(p => p.id === productId) || {};
+      return {
+        totalCost,
+        totalRevenue: (product.sell_price || 0) * qty,
+        components: nestedComponents,
+        quantity: qty
+      };
+    } catch (err) {
+      console.error('Error calculating components:', err);
+      return {
+        totalCost: 0,
+        totalRevenue: 0,
+        components: [],
+        quantity: qty
+      };
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -73,17 +133,7 @@ export default function OrderForm() {
     }));
   };
 
-  const handleNumberChange = (e) => {
-    const { name, value } = e.target;
-    if (value === '' || /^\d*\.?\d*$/.test(value)) {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
-
-  const addProduct = () => {
+  const addProduct = async () => {
     if (!selectedProduct || quantity < 1) return;
     
     const product = products.find(p => p.id === selectedProduct);
@@ -95,12 +145,26 @@ export default function OrderForm() {
       // Update quantity if product already in order
       const updatedItems = [...formData.items];
       updatedItems[existingItemIndex].quantity += parseInt(quantity, 10);
+      
+      // Recalculate components
+      const details = await calculateComponents(
+        selectedProduct, 
+        updatedItems[existingItemIndex].quantity
+      );
+      
       setFormData(prev => ({
         ...prev,
         items: updatedItems
       }));
+      
+      setComponentDetails(prev => ({
+        ...prev,
+        [selectedProduct]: details
+      }));
     } else {
       // Add new product to order
+      const details = await calculateComponents(selectedProduct, parseInt(quantity, 10));
+      
       setFormData(prev => ({
         ...prev,
         items: [
@@ -108,10 +172,16 @@ export default function OrderForm() {
           {
             productId: product.id,
             name: product.name,
-            price: product.price,
-            quantity: parseInt(quantity, 10)
+            price: product.sell_price,
+            quantity: parseInt(quantity, 10),
+            buy_price: product.buy_price
           }
         ]
+      }));
+      
+      setComponentDetails(prev => ({
+        ...prev,
+        [selectedProduct]: details
       }));
     }
     
@@ -125,6 +195,12 @@ export default function OrderForm() {
       ...prev,
       items: prev.items.filter(item => item.productId !== productId)
     }));
+    
+    setComponentDetails(prev => {
+      const newDetails = {...prev};
+      delete newDetails[productId];
+      return newDetails;
+    });
   };
 
   const calculateTotal = () => {
@@ -132,10 +208,23 @@ export default function OrderForm() {
       return sum + (item.price * item.quantity);
     }, 0);
     
-    const shipping = parseFloat(formData.shippingCost) || 0;
-    const tax = parseFloat(formData.tax) || 0;
-    
-    return (itemsTotal + shipping + tax).toFixed(2);
+    return itemsTotal.toFixed(2);
+  };
+
+  const calculateProfit = () => {
+    return formData.items.reduce((sum, item) => {
+      const itemDetails = componentDetails[item.productId] || {};
+      const revenue = itemDetails.totalRevenue || (item.price * item.quantity);
+      const cost = itemDetails.totalCost || (item.buy_price * item.quantity) || 0;
+      return sum + (revenue - cost);
+    }, 0).toFixed(2);
+  };
+
+  const calculateCost = () => {
+    return formData.items.reduce((sum, item) => {
+      const itemDetails = componentDetails[item.productId] || {};
+      return sum + (itemDetails.totalCost || (item.buy_price * item.quantity) || 0);
+    }, 0).toFixed(2);
   };
 
   const handleSubmit = async (e) => {
@@ -149,10 +238,12 @@ export default function OrderForm() {
       }
 
       const orderData = {
-        ...formData,
-        shippingCost: parseFloat(formData.shippingCost) || 0,
-        tax: parseFloat(formData.tax) || 0,
-        total: parseFloat(calculateTotal())
+        customer_name: formData.customer_name,
+        status: formData.status,
+        products: formData.items.map(item => ({
+          product_id: item.productId,
+          quantity: item.quantity
+        }))
       };
 
       const url = isEdit 
@@ -182,6 +273,22 @@ export default function OrderForm() {
     }
   };
 
+  const renderComponentTree = (component, level = 0) => {
+    return (
+      <div key={`${component.final_product_id}-${level}`} className="ml-4 pl-4 border-l-2 border-gray-200">
+        <div className="flex justify-between py-1">
+          <span>
+            {products.find(p => p.id === component.final_product_id)?.name || `Product ${component.final_product_id}`}
+          </span>
+          <span className="text-gray-600">
+            {component.rate} x {component.details.quantity} = {(component.rate * component.details.quantity).toFixed(2)}
+          </span>
+        </div>
+        {component.details.components.map(comp => renderComponentTree(comp, level + 1))}
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-5xl mx-auto">
       <div className="mb-6">
@@ -202,50 +309,18 @@ export default function OrderForm() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Customer Information</h3>
             
             <div className="space-y-2">
-              <Label htmlFor="customerName">Name *</Label>
+              <Label htmlFor="customer_name">Name *</Label>
               <Input
-                id="customerName"
-                name="customerName"
-                value={formData.customerName}
+                id="customer_name"
+                name="customer_name"
+                value={formData.customer_name}
                 onChange={handleChange}
                 required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="customerEmail">Email</Label>
-              <Input
-                id="customerEmail"
-                name="customerEmail"
-                type="email"
-                value={formData.customerEmail}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="customerPhone">Phone</Label>
-              <Input
-                id="customerPhone"
-                name="customerPhone"
-                type="tel"
-                value={formData.customerPhone}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="shippingAddress">Shipping Address</Label>
-              <Input
-                id="shippingAddress"
-                name="shippingAddress"
-                value={formData.shippingAddress}
-                onChange={handleChange}
               />
             </div>
           </div>
@@ -253,57 +328,24 @@ export default function OrderForm() {
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Order Details</h3>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select 
-                  name="status" 
-                  value={formData.status} 
-                  onValueChange={(value) => setFormData({...formData, status: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="shipped">Shipped</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="paymentMethod">Payment Method</Label>
-                <Select 
-                  name="paymentMethod" 
-                  value={formData.paymentMethod} 
-                  onValueChange={(value) => setFormData({...formData, paymentMethod: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select payment method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="credit_card">Credit Card</SelectItem>
-                    <SelectItem value="paypal">PayPal</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="cash">Cash on Delivery</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
             <div className="space-y-2">
-              <Label htmlFor="notes">Order Notes</Label>
-              <textarea
-                id="notes"
-                name="notes"
-                rows="3"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={formData.notes}
-                onChange={handleChange}
-              />
+              <Label htmlFor="status">Status</Label>
+              <Select 
+                name="status" 
+                value={formData.status} 
+                onValueChange={(value) => setFormData({...formData, status: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="shipped">Shipped</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
@@ -325,7 +367,7 @@ export default function OrderForm() {
                   <SelectContent>
                     {products.map(product => (
                       <SelectItem key={product.id} value={product.id}>
-                        {product.name} (${product.price})
+                        {product.name} (${product.sell_price})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -383,6 +425,15 @@ export default function OrderForm() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">
                               {item.name}
+                              {componentDetails[item.productId]?.components?.length > 0 && (
+                                <div className="mt-2 text-xs text-gray-500">
+                                  {renderComponentTree({
+                                    final_product_id: item.productId,
+                                    rate: 1,
+                                    details: componentDetails[item.productId]
+                                  })}
+                                </div>
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -420,46 +471,21 @@ export default function OrderForm() {
                     <div className="flex justify-between">
                       <span className="text-sm font-medium text-gray-600">Subtotal:</span>
                       <span className="text-sm font-medium">
-                        ${formData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}
+                        ${calculateTotal()}
                       </span>
                     </div>
                     
-                    <div className="flex justify-between">
-                      <div className="flex-1 max-w-xs">
-                        <Label htmlFor="shippingCost">Shipping Cost</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-                          <Input
-                            id="shippingCost"
-                            name="shippingCost"
-                            type="text"
-                            value={formData.shippingCost}
-                            onChange={handleNumberChange}
-                            className="pl-8"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="flex-1 max-w-xs">
-                        <Label htmlFor="tax">Tax</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-                          <Input
-                            id="tax"
-                            name="tax"
-                            type="text"
-                            value={formData.tax}
-                            onChange={handleNumberChange}
-                            className="pl-8"
-                          />
-                        </div>
-                      </div>
+                    <div className="flex justify-between pt-2">
+                      <span className="text-sm font-medium text-gray-600">Total Cost:</span>
+                      <span className="text-sm font-medium">
+                        ${calculateCost()}
+                      </span>
                     </div>
                     
                     <div className="flex justify-between pt-2 border-t border-gray-200">
-                      <span className="text-base font-semibold">Total:</span>
+                      <span className="text-base font-semibold">Estimated Profit:</span>
                       <span className="text-base font-semibold">
-                        ${calculateTotal()}
+                        ${calculateProfit()}
                       </span>
                     </div>
                   </div>
