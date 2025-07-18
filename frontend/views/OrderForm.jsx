@@ -17,7 +17,7 @@ export default function OrderForm() {
   });
 
   const [products, setProducts] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState(undefined);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -78,23 +78,29 @@ export default function OrderForm() {
 
   // Recursively fetch components and calculate costs
   const calculateComponents = async (productId, qty = 1) => {
+    // First, get the base product details
+    const product = products.find(p => p.id === Number(productId)) || {};
+    const baseReturn = {
+      totalCost: (Number(product.buy_price) || 0) * qty,
+      totalRevenue: (Number(product.sell_price) || 0) * qty,
+      components: [],
+      quantity: qty
+    };
+
     try {
       const response = await fetch(`http://localhost:4000/api/products/${productId}/components`);
-      if (!response.ok) throw new Error('Failed to fetch components');
-      const components = await response.json();
-      
-      if (components.length === 0) {
-        // Base product - no components
-        const product = products.find(p => p.id === productId) || {};
-        return {
-          totalCost: (product.buy_price || 0) * qty,
-          totalRevenue: (product.sell_price || 0) * qty,
-          components: [],
-          quantity: qty
-        };
+      if (!response.ok) {
+        console.log(`No components found for product ${productId}, treating as base product`);
+        return baseReturn;
       }
       
-      // Calculate nested components
+      const components = await response.json();
+      
+      if (!components || components.length === 0) {
+        return baseReturn;
+      }
+
+      // If we get here, process components
       let totalCost = 0;
       const nestedComponents = [];
       
@@ -107,21 +113,16 @@ export default function OrderForm() {
         });
       }
       
-      const product = products.find(p => p.id === productId) || {};
       return {
         totalCost,
-        totalRevenue: (product.sell_price || 0) * qty,
+        totalRevenue: (Number(product.sell_price) || 0) * qty,
         components: nestedComponents,
         quantity: qty
       };
-    } catch (err) {
-      console.error('Error calculating components:', err);
-      return {
-        totalCost: 0,
-        totalRevenue: 0,
-        components: [],
-        quantity: qty
-      };
+      
+    } catch (fetchError) {
+      console.error('Error calculating components:', fetchError);
+      return baseReturn;
     }
   };
 
@@ -134,12 +135,21 @@ export default function OrderForm() {
   };
 
   const addProduct = async () => {
-    if (!selectedProduct || quantity < 1) return;
+    console.log('Add product clicked', { selectedProduct, quantity });
     
-    const product = products.find(p => p.id === selectedProduct);
-    if (!product) return;
+    if (!selectedProduct || quantity < 1) {
+      console.log('No product selected or invalid quantity');
+      return;
+    }
+    
+    // Convert selectedProduct to number for comparison since IDs are numbers
+    const product = products.find(p => p.id === Number(selectedProduct));
+    if (!product) {
+      console.log('Product not found', { selectedProduct });
+      return;
+    }
 
-    const existingItemIndex = formData.items.findIndex(item => item.productId === selectedProduct);
+    const existingItemIndex = formData.items.findIndex(item => item.productId === Number(selectedProduct));
     
     if (existingItemIndex >= 0) {
       // Update quantity if product already in order
@@ -172,9 +182,9 @@ export default function OrderForm() {
           {
             productId: product.id,
             name: product.name,
-            price: product.sell_price,
-            quantity: parseInt(quantity, 10),
-            buy_price: product.buy_price
+            price: Number(product.sell_price) || 0,
+            quantity: parseInt(quantity, 10) || 1,
+            buy_price: Number(product.buy_price) || 0
           }
         ]
       }));
@@ -193,7 +203,7 @@ export default function OrderForm() {
   const removeProduct = (productId) => {
     setFormData(prev => ({
       ...prev,
-      items: prev.items.filter(item => item.productId !== productId)
+      items: prev.items.filter(item => item.productId !== Number(productId))
     }));
     
     setComponentDetails(prev => {
@@ -367,7 +377,7 @@ export default function OrderForm() {
                   <SelectContent>
                     {products.map(product => (
                       <SelectItem key={product.id} value={product.id}>
-                        {product.name} (${product.sell_price})
+                        {product.name} (${Number(product.sell_price).toFixed(2)})
                       </SelectItem>
                     ))}
                   </SelectContent>
