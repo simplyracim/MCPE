@@ -76,53 +76,60 @@ export default function OrderForm() {
     }
   }, [id, isEdit]);
 
-  // Recursively fetch components and calculate costs
-  const calculateComponents = async (productId, qty = 1) => {
-    // First, get the base product details
-    const product = products.find(p => p.id === Number(productId)) || {};
-    const baseReturn = {
-      totalCost: (Number(product.buy_price) || 0) * qty,
-      totalRevenue: (Number(product.sell_price) || 0) * qty,
-      components: [],
-      quantity: qty
-    };
-
+  // Calculate costs from product tree
+  const calculateComponents = async (productId, qty = 1, parentRate = 1) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/products/${productId}/components`);
-      if (!response.ok) {
-        console.log(`No components found for product ${productId}, treating as base product`);
-        return baseReturn;
-      }
-      
-      const components = await response.json();
-      
-      if (!components || components.length === 0) {
-        return baseReturn;
+      // Get the base product details
+      const product = products.find(p => p.id === Number(productId));
+      if (!product) {
+        console.error(`Product ${productId} not found`);
+        return {
+          totalCost: 0,
+          totalRevenue: 0,
+          components: [],
+          quantity: qty,
+          rate: parentRate
+        };
       }
 
-      // If we get here, process components
-      let totalCost = 0;
-      const nestedComponents = [];
-      
-      for (const comp of components) {
-        const compDetails = await calculateComponents(comp.final_product_id, qty * comp.rate);
-        totalCost += compDetails.totalCost;
-        nestedComponents.push({
-          ...comp,
-          details: compDetails
-        });
-      }
-      
-      return {
-        totalCost,
-        totalRevenue: (Number(product.sell_price) || 0) * qty,
-        components: nestedComponents,
-        quantity: qty
+      // Recursive function to calculate costs from the product tree
+      const calculateCosts = (product, quantity, rate = 1) => {
+        let totalCost = 0;
+        const components = [];
+        
+        // If product has components, calculate their total cost
+        if (product.components && product.components.length > 0) {
+          product.components.forEach(comp => {
+            const compCost = calculateCosts(comp, quantity * comp.rate, comp.rate);
+            totalCost += compCost.totalCost;
+            components.push(compCost);
+          });
+        } else {
+          // Base component - use buy price
+          totalCost = (Number(product.buy_price) || 0) * quantity;
+        }
+        
+        return {
+          ...product,
+          totalCost,
+          totalRevenue: (Number(product.sell_price) || 0) * quantity,
+          components,
+          quantity,
+          rate
+        };
       };
       
-    } catch (fetchError) {
-      console.error('Error calculating components:', fetchError);
-      return baseReturn;
+      return calculateCosts(product, qty, parentRate);
+      
+    } catch (error) {
+      console.error('Error calculating components:', error);
+      return {
+        totalCost: 0,
+        totalRevenue: 0,
+        components: [],
+        quantity: qty,
+        rate: parentRate
+      };
     }
   };
 
@@ -142,62 +149,75 @@ export default function OrderForm() {
       return;
     }
     
-    // Convert selectedProduct to number for comparison since IDs are numbers
-    const product = products.find(p => p.id === Number(selectedProduct));
-    if (!product) {
-      console.log('Product not found', { selectedProduct });
-      return;
-    }
+    try {
+      // Convert selectedProduct to number for comparison since IDs are numbers
+      const productId = Number(selectedProduct);
+      const qty = Number(quantity);
+      const product = products.find(p => p.id === productId);
+      
+      if (!product) {
+        console.error('Product not found:', productId);
+        return;
+      }
 
-    const existingItemIndex = formData.items.findIndex(item => item.productId === Number(selectedProduct));
-    
-    if (existingItemIndex >= 0) {
-      // Update quantity if product already in order
-      const updatedItems = [...formData.items];
-      updatedItems[existingItemIndex].quantity += parseInt(quantity, 10);
+      // Check if product is already in the order
+      const existingItemIndex = formData.items.findIndex(item => item.productId === productId);
       
-      // Recalculate components
-      const details = await calculateComponents(
-        selectedProduct, 
-        updatedItems[existingItemIndex].quantity
-      );
+      if (existingItemIndex >= 0) {
+        // Update quantity if product already in order
+        const updatedItems = [...formData.items];
+        const newQuantity = updatedItems[existingItemIndex].quantity + qty;
+        
+        updatedItems[existingItemIndex] = {
+          ...updatedItems[existingItemIndex],
+          quantity: newQuantity
+        };
+        
+        setFormData(prev => ({
+          ...prev,
+          items: updatedItems
+        }));
+        
+        // Update component details with new quantities
+        const updatedDetails = await calculateComponents(productId, newQuantity);
+        setComponentDetails(prev => ({
+          ...prev,
+          [productId]: updatedDetails
+        }));
+      } else {
+        // Calculate component details for the new product
+        const details = await calculateComponents(productId, qty);
+        
+        // Add new product to order
+        const newProduct = {
+          productId,
+          name: product.name,
+          price: Number(product.sell_price) || 0,
+          quantity: qty,
+          buy_price: Number(product.buy_price) || 0,
+          description: product.description
+        };
+        
+        setFormData(prev => ({
+          ...prev,
+          items: [...prev.items, newProduct]
+        }));
+        
+        // Add component details for the new product
+        setComponentDetails(prev => ({
+          ...prev,
+          [productId]: details
+        }));
+      }
       
-      setFormData(prev => ({
-        ...prev,
-        items: updatedItems
-      }));
+      // Reset form
+      setSelectedProduct('');
+      setQuantity(1);
       
-      setComponentDetails(prev => ({
-        ...prev,
-        [selectedProduct]: details
-      }));
-    } else {
-      // Add new product to order
-      const details = await calculateComponents(selectedProduct, parseInt(quantity, 10));
-      
-      setFormData(prev => ({
-        ...prev,
-        items: [
-          ...prev.items,
-          {
-            productId: product.id,
-            name: product.name,
-            price: Number(product.sell_price) || 0,
-            quantity: parseInt(quantity, 10) || 1,
-            buy_price: Number(product.buy_price) || 0
-          }
-        ]
-      }));
-      
-      setComponentDetails(prev => ({
-        ...prev,
-        [selectedProduct]: details
-      }));
+    } catch (error) {
+      console.error('Error adding product:', error);
+      setError('Failed to add product. Please try again.');
     }
-    
-    // Reset form
-    setSelectedProduct('');
-    setQuantity(1);
   };
 
   const removeProduct = (productId) => {
@@ -284,17 +304,61 @@ export default function OrderForm() {
   };
 
   const renderComponentTree = (component, level = 0) => {
+    if (!component) return null;
+    
+    const displayRate = component.rate ? `${component.rate} × ` : '';
+    const displayTotal = ((component.rate || 1) * (component.quantity || 1)).toFixed(2);
+    const totalCost = component.totalCost || 0;
+    
     return (
-      <div key={`${component.final_product_id}-${level}`} className="ml-4 pl-4 border-l-2 border-gray-200">
-        <div className="flex justify-between py-1">
-          <span>
-            {products.find(p => p.id === component.final_product_id)?.name || `Product ${component.final_product_id}`}
-          </span>
-          <span className="text-gray-600">
-            {component.rate} x {component.details.quantity} = {(component.rate * component.details.quantity).toFixed(2)}
-          </span>
+      <div key={`${component.id}-${level}`} className="ml-4 pl-4 border-l-2 border-gray-200">
+        <div className="flex justify-between py-1 items-center">
+          <div className="flex-1">
+            <span className="font-medium">{component.name || `Product ${component.id}`}</span>
+            {component.description && (
+              <span className="text-sm text-gray-500 ml-2">({component.description})</span>
+            )}
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-gray-600">
+              {displayRate}{component.quantity || 1} = {displayTotal} units
+            </div>
+            <div className="text-xs text-gray-500">
+              Unit Cost: ${(component.buy_price || 0).toFixed(2)}
+            </div>
+          </div>
         </div>
-        {component.details.components.map(comp => renderComponentTree(comp, level + 1))}
+        
+        {component.components && component.components.length > 0 && (
+          <div className="mt-1">
+            <div className="text-xs font-medium text-gray-500 mb-1">Components:</div>
+            {component.components.map((comp, index) => {
+              const componentKey = comp.id ? `${comp.id}-${index}` : `comp-${index}`;
+              return (
+                <div key={componentKey}>
+                  {renderComponentTree(comp, level + 1)}
+                </div>
+              );
+            })}
+            <div className="text-xs text-right text-gray-500 mt-1">
+              Total Components Cost: ${totalCost.toFixed(2)}
+            </div>
+          </div>
+        )}
+        
+        {level === 0 && (
+          <div className="text-right mt-1">
+            <div className="text-sm font-medium">
+              Total Cost: ${totalCost.toFixed(2)}
+            </div>
+            <div className="text-sm">
+              Sell Price: ${(component.price * (component.quantity || 1)).toFixed(2)}
+            </div>
+            <div className="text-sm font-semibold">
+              Profit: ${((component.price * (component.quantity || 1)) - totalCost).toFixed(2)}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -498,6 +562,95 @@ export default function OrderForm() {
                         ${calculateProfit()}
                       </span>
                     </div>
+                    
+                    {/* Cost Breakdown Table */}
+                    {formData.items.some(item => componentDetails[item.productId]?.components?.length > 0) && (
+                      <div className="mt-6">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Cost Breakdown:</h4>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Component</th>
+                                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
+                                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Cost</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {formData.items.flatMap(item => {
+                                const details = componentDetails[item.productId];
+                                if (!details?.components) return [];
+                                
+                                // Flatten all components recursively
+                                const flattenComponents = (comps, multiplier = 1) => {
+                                  return comps.flatMap(comp => {
+                                    const componentQty = (comp.rate || 1) * multiplier * item.quantity;
+                                    const children = comp.components?.length > 0 
+                                      ? flattenComponents(comp.components, componentQty) 
+                                      : [];
+                                    
+                                    // Only include leaf nodes (actual components with prices)
+                                    if (comp.buy_price !== undefined) {
+                                      return [{
+                                        id: comp.id,
+                                        name: comp.name,
+                                        unitCost: Number(comp.buy_price) || 0,
+                                        quantity: componentQty,
+                                        totalCost: (Number(comp.buy_price) || 0) * componentQty
+                                      }];
+                                    }
+                                    return children;
+                                  });
+                                };
+                                
+                                return flattenComponents(details.components);
+                              })
+                              // Group by component ID and sum quantities
+                              .reduce((acc, comp) => {
+                                const existing = acc.find(c => c.id === comp.id);
+                                if (existing) {
+                                  existing.quantity += comp.quantity;
+                                  existing.totalCost += comp.totalCost;
+                                } else {
+                                  acc.push({...comp});
+                                }
+                                return acc;
+                              }, [])
+                              // Sort by total cost (highest first)
+                              .sort((a, b) => b.totalCost - a.totalCost)
+                              // Render rows
+                              .map((comp, index) => (
+                                <tr key={`${comp.id}-${index}`}>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                                    {comp.name}
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 text-right">
+                                    ${comp.unitCost.toFixed(2)}
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 text-right">
+                                    {comp.quantity.toFixed(2)}
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                                    ${comp.totalCost.toFixed(2)}
+                                  </td>
+                                </tr>
+                              ))}
+                              
+                              {/* Total Row */}
+                              <tr className="bg-gray-50">
+                                <td colSpan="3" className="px-3 py-2 text-right text-sm font-medium text-gray-900">
+                                  Total Cost:
+                                </td>
+                                <td className="px-3 py-2 text-right text-sm font-medium text-gray-900">
+                                  ${calculateCost()}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
