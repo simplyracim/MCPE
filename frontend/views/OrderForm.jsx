@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatCurrency } from '../lib/utils';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -318,7 +319,7 @@ export default function OrderForm() {
       return sum + (item.price * item.quantity);
     }, 0);
     
-    return itemsTotal.toFixed(2);
+    return formatCurrency(itemsTotal);
   };
 
   const calculateCost = () => {
@@ -333,7 +334,7 @@ export default function OrderForm() {
     }, 0);
     
     // Calculate total cost
-    return total.toFixed(2);
+    return formatCurrency(total);
   };
 
   const calculateProfit = () => {
@@ -346,7 +347,7 @@ export default function OrderForm() {
     const totalCost = parseFloat(calculateCost());
     const profit = totalRevenue - totalCost;
     // Calculate profit
-    return profit.toFixed(2);
+    return formatCurrency(profit);
   };
 
   const handleSubmit = async (e) => {
@@ -496,7 +497,7 @@ export default function OrderForm() {
               {displayRate}{qty} = {displayTotal} units
             </div>
             <div className="text-xs text-gray-500">
-              Unit Cost: ${unitPrice.toFixed(2)}
+              Unit Cost: {formatCurrency(unitPrice)}
             </div>
           </div>
         </div>
@@ -513,7 +514,7 @@ export default function OrderForm() {
               );
             })}
             <div className="text-xs text-right text-gray-500 mt-1">
-              Total Components Cost: ${totalCost.toFixed(2)}
+              Total Components Cost: {formatCurrency(totalCost)}
             </div>
           </div>
         )}
@@ -521,13 +522,13 @@ export default function OrderForm() {
         {level === 0 && (
           <div className="text-right mt-1">
             <div className="text-sm font-medium">
-              Total Cost: ${totalCost.toFixed(2)}
+              Total Cost: {formatCurrency(totalCost)}
             </div>
             <div className="text-sm">
-              Sell Price: ${(sellPrice * qty).toFixed(2)}
+              Sell Price: {formatCurrency(sellPrice * qty)}
             </div>
             <div className="text-sm font-semibold">
-              Profit: ${((sellPrice * qty) - totalCost).toFixed(2)}
+              Profit: {formatCurrency((sellPrice * qty) - totalCost)}
             </div>
           </div>
         )}
@@ -572,10 +573,10 @@ export default function OrderForm() {
             </div>
             <div style="text-align: right;">
               <div style="font-size: 12px; color: #64748b;">
-                ${displayRate}${qty} = ${displayTotal} units
+                ${displayRate}${qty} = ${formatCurrency(displayTotal)} units
               </div>
               <div style="font-size: 11px; color: #94a3b8;">
-                Unit Cost: $${unitPrice.toFixed(2)}
+                Unit Cost: {formatCurrency(unitPrice)}
               </div>
             </div>
           </div>
@@ -587,7 +588,7 @@ export default function OrderForm() {
             <div style="font-size: 11px; font-weight: 500; color: #64748b; margin-bottom: 2px;">Components:</div>
             ${component.components.map(comp => renderComponentTreeToHTML(comp, level + 1)).join('')}
             <div style="font-size: 11px; color: #64748b; text-align: right; margin-top: 4px;">
-              Total Components Cost: $${totalCost.toFixed(2)}
+              Total Components Cost: {formatCurrency(totalCost)}
             </div>
           </div>
         `;
@@ -597,13 +598,13 @@ export default function OrderForm() {
         html += `
           <div style="text-align: right; margin-top: 4px;">
             <div style="font-size: 13px; font-weight: 500;">
-              Total Cost: $${totalCost.toFixed(2)}
+              Total Cost: {formatCurrency(totalCost)}
             </div>
             <div style="font-size: 13px;">
-              Sell Price: $${(sellPrice * qty).toFixed(2)}
+              Sell Price: {formatCurrency(sellPrice * qty)}
             </div>
             <div style="font-size: 13px; font-weight: 600;">
-              Profit: $${((sellPrice * qty) - totalCost).toFixed(2)}
+              Profit: {formatCurrency((sellPrice * qty) - totalCost)}
             </div>
           </div>
         `;
@@ -777,9 +778,9 @@ export default function OrderForm() {
                       </div>
                     ` : ''}
                   </td>
-                  <td style="text-align: right;">$${item.price.toFixed(2)}</td>
+                  <td style="text-align: right;">${formatCurrency(item.price)}</td>
                   <td style="text-align: right;">${item.quantity}</td>
-                  <td style="text-align: right;">$${(item.price * item.quantity).toFixed(2)}</td>
+                  <td style="text-align: right;">${formatCurrency(item.price * item.quantity)}</td>
                 </tr>
               `;
             }).join('')}
@@ -789,15 +790,15 @@ export default function OrderForm() {
         <div class="total-section">
           <div class="total-row">
             <span class="total-label">Subtotal:</span>
-            <span>$${subtotal}</span>
+            <span>${formatCurrency(subtotal)}</span>
           </div>
           <div class="total-row">
             <span class="total-label">Total Cost:</span>
-            <span>$${totalCost}</span>
+            <span>${formatCurrency(totalCost)}</span>
           </div>
           <div class="total-row grand-total">
             <span>Estimated Profit:</span>
-            <span>$${profit}</span>
+            <span>${formatCurrency(profit)}</span>
           </div>
         </div>
   
@@ -925,7 +926,7 @@ export default function OrderForm() {
                   <SelectContent>
                     {products.map(product => (
                       <SelectItem key={product.id} value={product.id.toString()}>
-                        {product.name} (${Number(product.sell_price).toFixed(2)})
+                        {product.name} ({formatCurrency(Number(product.sell_price))})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1002,7 +1003,7 @@ export default function OrderForm() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">
-                              ${item.price.toFixed(2)}
+                              {formatCurrency(item.price)}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -1012,7 +1013,7 @@ export default function OrderForm() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">
-                              ${(item.price * item.quantity).toFixed(2)}
+                              {formatCurrency(item.price * item.quantity)}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -1035,21 +1036,21 @@ export default function OrderForm() {
                     <div className="flex justify-between">
                       <span className="text-sm font-medium text-gray-600">Subtotal:</span>
                       <span className="text-sm font-medium">
-                        ${calculateTotal()}
+                        {calculateTotal()}
                       </span>
                     </div>
                     
                     <div className="flex justify-between pt-2">
                       <span className="text-sm font-medium text-gray-600">Total Cost:</span>
                       <span className="text-sm font-medium">
-                        ${calculateCost()}
+                        {calculateCost()}
                       </span>
                     </div>
                     
                     <div className="flex justify-between pt-2 border-t border-gray-200">
                       <span className="text-base font-semibold">Estimated Profit:</span>
                       <span className="text-base font-semibold">
-                        ${calculateProfit()}
+                        {calculateProfit()}
                       </span>
                     </div>
                     
@@ -1122,13 +1123,13 @@ export default function OrderForm() {
                                     {comp.name}
                                   </td>
                                   <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 text-right">
-                                    ${comp.unitCost.toFixed(2)}
+                                    {formatCurrency(comp.unitCost)}
                                   </td>
                                   <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 text-right">
                                     {comp.quantity.toFixed(2)}
                                   </td>
                                   <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                                    ${comp.totalCost.toFixed(2)}
+                                    {formatCurrency(comp.totalCost)}
                                   </td>
                                 </tr>
                               ))}
@@ -1139,7 +1140,7 @@ export default function OrderForm() {
                                   Total Cost:
                                 </td>
                                 <td className="px-3 py-2 text-right text-sm font-medium text-gray-900">
-                                  ${calculateCost()}
+                                  {calculateCost()}
                                 </td>
                               </tr>
                             </tbody>

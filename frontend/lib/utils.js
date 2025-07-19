@@ -6,10 +6,11 @@ export function cn(...inputs) {
 }
 
 export function formatCurrency(amount) {
-  return new Intl.NumberFormat('en-US', {
+  if (amount === null || amount === undefined) return '';
+  return new Intl.NumberFormat('fr-DZ', {
     style: 'currency',
-    currency: 'USD',
-  }).format(amount)
+    currency: 'DZD',
+  }).format(amount);
 }
 
 export function formatDate(dateString) {

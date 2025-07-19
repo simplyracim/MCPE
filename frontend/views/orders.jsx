@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { formatCurrency } from '../lib/utils';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
@@ -87,12 +88,6 @@ export default function Orders() {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount || 0);
-  };
 
   const fetchOrderDetails = async (orderId) => {
     try {
@@ -136,7 +131,7 @@ export default function Orders() {
       
       const qty = Number(component.quantity) || 1;
       const price = Number(component.sell_price) || 0;
-      const total = (price * qty).toFixed(2);
+      const total = formatCurrency(price * qty);
       
       let html = `
         <div style="margin-left: ${level * 15}px; padding-left: 4px; border-left: 1px solid #e2e8f0; margin-bottom: 8px;">
@@ -146,7 +141,7 @@ export default function Orders() {
             </div>
             <div style="text-align: right;">
               <div style="font-size: 12px; color: #64748b;">
-                ${qty} × $${price ? price.toFixed(2) : '0.00'} = $${total}
+                ${qty} × ${formatCurrency(price || 0)} = ${total}
               </div>
             </div>
           </div>
@@ -309,7 +304,7 @@ export default function Orders() {
             ${orderDetails.products?.map(item => {
               const quantity = Number(item.product_orders?.quantity) || 1;
               const price = Number(item.sell_price) || 0;
-              const total = (price * quantity).toFixed(2);
+              const total = formatCurrency(price * quantity);
               
               return `
                 <tr>
@@ -322,9 +317,9 @@ export default function Orders() {
                       </div>
                     ` : ''}
                   </td>
-                  <td style="text-align: right;">$${price ? price.toFixed(2) : '0.00'}</td>
+                  <td style="text-align: right;">${formatCurrency(price || 0)}</td>
                   <td style="text-align: right;">${quantity}</td>
-                  <td style="text-align: right;">$${total || '0.00'}</td>
+                  <td style="text-align: right;">${total || formatCurrency(0)}</td>
                 </tr>
               `;
             }).join('')}
@@ -334,15 +329,15 @@ export default function Orders() {
         <div class="total-section">
           <div class="total-row">
             <span class="total-label">Subtotal:</span>
-            <span>$${subtotal.toFixed(2)}</span>
+            <span>${formatCurrency(subtotal)}</span>
           </div>
           <div class="total-row">
             <span class="total-label">Total Cost:</span>
-            <span>$${totalCost.toFixed(2)}</span>
+            <span>${formatCurrency(totalCost)}</span>
           </div>
           <div class="total-row grand-total">
             <span>Profit:</span>
-            <span>$${profit.toFixed(2)}</span>
+            <span>${formatCurrency(profit)}</span>
           </div>
         </div>
   
