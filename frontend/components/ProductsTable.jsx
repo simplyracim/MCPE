@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from './ui/Button';
+import { formatCurrency } from '../lib/utils';
 import {
   Table,
   TableBody,
@@ -81,9 +82,9 @@ export default function ProductTable({ products, onDelete, isLoading = false }) 
                 <TableCell className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                   {product.description}
                 </TableCell>
-                <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">
+                <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-right">
                   <span className="font-medium text-gray-900">
-                    ${product.price?.toFixed(2) ?? '0.00'}
+                    {formatCurrency(product.price || 0)}
                   </span>
                 </TableCell>
                 <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-right">

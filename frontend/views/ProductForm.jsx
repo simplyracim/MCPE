@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { formatCurrency } from '../lib/utils';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
@@ -81,6 +82,7 @@ export default function ProductForm() {
 
   const handleNumberChange = (e) => {
     const { name, value } = e.target;
+    // Allow numbers, decimal point, and empty string
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
       setFormData(prev => ({
         ...prev,
@@ -241,33 +243,33 @@ export default function ProductForm() {
 
           <div className="space-y-2">
             <Label htmlFor="sell_price">Selling Price *</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-              <Input
-                id="sell_price"
-                name="sell_price"
-                type="text"
-                value={formData.sell_price}
-                onChange={handleNumberChange}
-                className="pl-8"
-                required
-              />
-            </div>
+            <Input
+              id="sell_price"
+              name="sell_price"
+              type="text"
+              value={formData.sell_price}
+              onChange={handleNumberChange}
+              placeholder="0.00"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Displayed as: {formatCurrency(formData.sell_price || 0)}
+            </p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="buy_price">Buy Price</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-              <Input
-                id="buy_price"
-                name="buy_price"
-                type="text"
-                value={formData.buy_price}
-                onChange={handleNumberChange}
-                className="pl-8"
-              />
-            </div>
+            <Input
+              id="buy_price"
+              name="buy_price"
+              type="text"
+              value={formData.buy_price}
+              onChange={handleNumberChange}
+              placeholder="0.00"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Displayed as: {formatCurrency(formData.buy_price || 0)}
+            </p>
           </div>
         </div>
         
