@@ -101,7 +101,7 @@ router.post('/login', [
   try {
     // Get user with role information
     const [users] = await db.promise().query(
-      `SELECT l.*, e.role_id, r.name as role_name 
+      `SELECT l.*, e.role_id, r.title as role_name 
        FROM login_info l
        JOIN employees e ON l.employee_id = e.id
        JOIN roles r ON e.role_id = r.id
@@ -146,7 +146,7 @@ router.post('/login', [
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const [users] = await db.promise().query(
-      `SELECT e.id, e.name, e.role_id, l.email, r.name as role_name
+      `SELECT e.id, e.name, e.role_id, l.email, r.title as role_name
        FROM employees e
        JOIN login_info l ON e.id = l.employee_id
        JOIN roles r ON e.role_id = r.id

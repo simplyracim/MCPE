@@ -1,43 +1,66 @@
 import React from 'react';
-import { styled } from '../../styles/theme';
+import { cn } from '../../lib/utils';
 
-const StyledInput = styled('input', {
-  width: '100%',
-  padding: '0.5rem 0.75rem',
-  fontSize: '0.875rem',
-  borderRadius: '0.375rem',
-  border: '1px solid $gray400',
-  backgroundColor: 'white',
-  color: '$gray900',
-  transition: 'border-color 0.2s, box-shadow 0.2s',
-  '&:focus': {
-    outline: 'none',
-    borderColor: '$primary500',
-    boxShadow: '0 0 0 1px $primary500',
-  },
-  '&:disabled': {
+const Input = React.forwardRef(({ className, error, style, ...props }, ref) => {
+  const baseStyle = {
+    width: '100%',
+    padding: '0.5rem 0.75rem',
+    fontSize: '0.875rem',
+    lineHeight: '1.25rem',
+    borderRadius: '0.375rem',
+    border: `1px solid ${error ? '#ef4444' : '#d1d5db'}`,
+    backgroundColor: '#fff',
+    color: '#111827',
+    transition: 'all 0.2s',
+  };
+
+  const focusStyle = error 
+    ? {
+        outline: 'none',
+        borderColor: '#ef4444',
+        boxShadow: '0 0 0 1px #ef4444',
+      }
+    : {
+        outline: 'none',
+        borderColor: '#3b82f6',
+        boxShadow: '0 0 0 1px #3b82f6',
+      };
+
+  const disabledStyle = {
     opacity: 0.7,
+    backgroundColor: '#f3f4f6',
     cursor: 'not-allowed',
-    backgroundColor: '$gray100',
-  },
-  '&::placeholder': {
-    color: '$gray500',
-  },
-  variants: {
-    error: {
-      true: {
-        borderColor: '$error500',
-        '&:focus': {
-          borderColor: '$error500',
-          boxShadow: '0 0 0 1px $error500',
-        },
-      },
-    },
-  },
-});
+  };
 
-const Input = React.forwardRef(({ error, ...props }, ref) => {
-  return <StyledInput error={error} ref={ref} {...props} />;
+  const inputStyle = {
+    ...baseStyle,
+    ...(props.disabled ? disabledStyle : {}),
+    ...(error ? { borderColor: '#ef4444' } : {}),
+    ...style,
+  };
+
+  const handleFocus = (e) => {
+    Object.assign(e.target.style, focusStyle);
+    if (props.onFocus) props.onFocus(e);
+  };
+
+  const handleBlur = (e) => {
+    e.target.style.outline = 'none';
+    e.target.style.boxShadow = 'none';
+    e.target.style.borderColor = error ? '#ef4444' : '#d1d5db';
+    if (props.onBlur) props.onBlur(e);
+  };
+
+  return (
+    <input
+      ref={ref}
+      style={inputStyle}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      className={className}
+      {...props}
+    />
+  );
 });
 
 Input.displayName = 'Input';
@@ -50,17 +73,11 @@ const InputField = React.forwardRef(
     const descriptionId = `${id}-description`;
 
     return (
-      <div style={{ width: '100%' }}>
+      <div className="w-full mb-4">
         {label && (
           <label
             htmlFor={id}
-            style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              color: 'var(--colors-text)',
-            }}
+            className="block mb-1 text-sm font-medium text-gray-700"
           >
             {label}
           </label>
@@ -75,16 +92,17 @@ const InputField = React.forwardRef(
               .join(' ') || undefined
           }
           error={error}
+          className={className}
           {...props}
         />
         {description && (
-          <p id={descriptionId} className="text-sm text-muted-foreground">
+          <p id={descriptionId} className="mt-1 text-xs text-gray-500">
             {description}
           </p>
         )}
         {error && (
-          <p id={errorId} className="text-sm font-medium text-destructive">
-            {error.message}
+          <p id={errorId} className="mt-1 text-xs text-red-600">
+            {error}
           </p>
         )}
       </div>

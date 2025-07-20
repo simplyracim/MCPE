@@ -13,8 +13,11 @@ import {
   Package,
   ShoppingCart,
   User,
+  LogOut,
   Settings as SettingsIcon
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const SidebarContainer = styled('aside', {
   width: '250px',
@@ -149,22 +152,69 @@ const navItems = [
   },
 ];
 
+const userActions = [
+  {
+    title: 'Account',
+    items: [
+      { icon: <LogOut size={18} />, text: 'Logout', action: 'logout' },
+    ],
+  },
+];
+
 const Sidebar = () => {
-  const location = useLocation();
+  const { logout } = useAuth();
+
+  const handleAction = (action) => {
+    if (action === 'logout') {
+      logout();
+    }
+  };
 
   return (
     <SidebarContainer>
-        <Logo>MCPE</Logo>
-        <Nav>
-          {navItems.map((section, index) => (
-            <NavSection key={index}>
+      <Logo>MCPE</Logo>
+      <Nav>
+        {navItems.map((section, index) => (
+          <NavSection key={`nav-${index}`}>
+            <NavSectionTitle>{section.title}</NavSectionTitle>
+            {section.items.map((item, itemIndex) => (
+              <NavItem 
+                key={`nav-item-${itemIndex}`}
+                to={item.to}
+                className={({ isActive }) => isActive ? 'active' : ''}
+                end
+              >
+                <NavIcon>{item.icon}</NavIcon>
+                <NavText>{item.text}</NavText>
+              </NavItem>
+            ))}
+          </NavSection>
+        ))}
+        
+        {/* User Actions */}
+        <div style={{ marginTop: 'auto', paddingBottom: '1rem' }}>
+          {userActions.map((section, index) => (
+            <NavSection key={`action-${index}`}>
               <NavSectionTitle>{section.title}</NavSectionTitle>
               {section.items.map((item, itemIndex) => (
                 <NavItem 
-                  key={itemIndex}
-                  to={item.to}
-                  className={({ isActive }) => isActive ? 'active' : ''}
-                  end
+                  key={`action-item-${itemIndex}`}
+                  as="button"
+                  onClick={() => handleAction(item.action)}
+                  css={{
+                    width: '100%',
+                    textAlign: 'left',
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.03)',
+                      color: '$error',
+                      '& svg': {
+                        color: '$error',
+                      },
+                    },
+                  }}
                 >
                   <NavIcon>{item.icon}</NavIcon>
                   <NavText>{item.text}</NavText>
@@ -172,7 +222,8 @@ const Sidebar = () => {
               ))}
             </NavSection>
           ))}
-        </Nav>
+        </div>
+      </Nav>
     </SidebarContainer>
   );
 };

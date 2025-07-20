@@ -1,6 +1,8 @@
 import React from 'react';
 import { styled } from '../styles/theme';
 import { Button } from '../components/ui/Button';
+import { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 
 const HeroSection = styled('section', {
   padding: '$10 0',
@@ -8,6 +10,62 @@ const HeroSection = styled('section', {
   borderRadius: '$lg',
   marginBottom: '$8',
   textAlign: 'center',
+});
+
+const StatusBadge = styled('span', {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '0.25rem 0.75rem',
+  borderRadius: '9999px',
+  fontSize: '0.75rem',
+  fontWeight: 600,
+  variants: {
+    variant: {
+      active: {
+        backgroundColor: '$successLight',
+        color: '$success',
+      },
+      inactive: {
+        backgroundColor: '$errorLight',
+        color: '$error',
+      },
+      admin: {
+        backgroundColor: '$primaryLight',
+        color: '$primary',
+      },
+    },
+  },
+});
+
+const TableContainer = styled('div', {
+  backgroundColor: '$surface',
+  borderRadius: '0.5rem',
+  boxShadow: '$md',
+  overflow: 'hidden',
+});
+
+const Table = styled('table', {
+  width: '100%',
+  borderCollapse: 'collapse',
+  '& th, & td': {
+    padding: '1rem',
+    textAlign: 'left',
+    borderBottom: '1px solid $border',
+  },
+  '& th': {
+    backgroundColor: '$background',
+    fontWeight: 600,
+    color: '$text',
+    textTransform: 'uppercase',
+    fontSize: '0.75rem',
+    letterSpacing: '0.05em',
+  },
+  '& tr:last-child td': {
+    borderBottom: 'none',
+  },
+  '& tr:hover': {
+    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+  },
 });
 
 const Title = styled('h1', {
@@ -83,50 +141,6 @@ const FeatureDescription = styled('p', {
   lineHeight: 1.6,
 });
 
-const EmployeeTable = styled('div', {
-  marginTop: '$8',
-  backgroundColor: '$surface',
-  borderRadius: '$lg',
-  overflow: 'hidden',
-  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-});
-
-const Table = styled('table', {
-  width: '100%',
-  borderCollapse: 'collapse',
-});
-
-const TableHeader = styled('thead', {
-  backgroundColor: 'rgba(0, 0, 0, 0.02)',
-  borderBottom: '1px solid $border',
-});
-
-const TableHeaderCell = styled('th', {
-  padding: '$3 $4',
-  textAlign: 'left',
-  fontWeight: 600,
-  color: '$textLight',
-  fontSize: '$sm',
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
-});
-
-const TableRow = styled('tr', {
-  borderBottom: '1px solid $border',
-  '&:last-child': {
-    borderBottom: 'none',
-  },
-  '&:hover': {
-    backgroundColor: 'rgba(0, 0, 0, 0.01)',
-  },
-});
-
-const TableCell = styled('td', {
-  padding: '$3 $4',
-  color: '$text',
-  fontSize: '$base',
-});
-
 export default function Home() {
   const features = [
     {
@@ -146,12 +160,36 @@ export default function Home() {
     },
   ];
 
-  // Mock employee data - in a real app, this would come from an API
-  const employees = [
-    { id: 1, name: 'John Doe', role: 'Software Engineer' },
-    { id: 2, name: 'Jane Smith', role: 'Product Manager' },
-    { id: 3, name: 'Bob Johnson', role: 'UX Designer' },
-  ];
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:4000/api/employees', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch employees');
+      }
+
+      const data = await response.json();
+      setEmployees(data);
+    } catch (err) {
+      setError(err.message);
+      toast.error('Failed to load employees');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
@@ -181,30 +219,39 @@ export default function Home() {
         ))}
       </FeaturesGrid>
 
-      <EmployeeTable>
+      <TableContainer>
         <Table>
-          <TableHeader>
+          <thead>
             <tr>
-              <TableHeaderCell>Name</TableHeaderCell>
-              <TableHeaderCell>Role</TableHeaderCell>
-              <TableHeaderCell>Actions</TableHeaderCell>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Status</th>
             </tr>
-          </TableHeader>
+          </thead>
           <tbody>
             {employees.map((employee) => (
-              <TableRow key={employee.id}>
-                <TableCell>{employee.name}</TableCell>
-                <TableCell>{employee.role}</TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="sm">
-                    View Details
-                  </Button>
-                </TableCell>
-              </TableRow>
+              <tr key={employee.id}>
+                <td>{employee.name}</td>
+                <td>{employee.role_title || 'No role assigned'}</td>
+                <td>
+                  {employee.is_admin ? (
+                    <StatusBadge variant="admin">Admin</StatusBadge>
+                  ) : (
+                    <StatusBadge variant="active">Active</StatusBadge>
+                  )}
+                </td>
+              </tr>
             ))}
+            {employees.length === 0 && (
+              <tr>
+                <td colSpan="4" style={{ textAlign: 'center', padding: '2rem' }}>
+                  No employees found
+                </td>
+              </tr>
+            )}
           </tbody>
         </Table>
-      </EmployeeTable>
+      </TableContainer>
     </>
   );
 }
