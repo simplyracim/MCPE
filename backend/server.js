@@ -7,22 +7,28 @@ const PORT = 4000;
 
 app.use(cors());
 app.use(express.json());
-// routes
+
+// Import routes
 const employeeRoutes = require('./routes/employees');
 const roleRoutes = require('./routes/roles');
-const loginRoutes = require('./routes/login');
+const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 
-// routes
+// API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/roles', roleRoutes);
-app.use('/api/login', loginRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+
+// Health check endpoint
 app.get('/api', (req, res) => {
-    res.send('Backend home page');
+  res.json({ 
+    status: 'running',
+    timestamp: new Date().toISOString()
   });
+});
 
 // Start server
 app.listen(PORT, () => {

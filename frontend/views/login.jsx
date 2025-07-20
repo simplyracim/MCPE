@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { styled } from '../styles/theme';
 import { Button } from '../components/ui/Button';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
+import { Input } from '../components/ui/Input';
 
 const LoginContainer = styled('div', {
   display: 'flex',
@@ -12,6 +16,27 @@ const LoginContainer = styled('div', {
   backgroundColor: '$background',
 });
 
+const Title = styled('h1', {
+  fontSize: '$2xl',
+  fontWeight: 'bold',
+  marginBottom: '$6',
+  color: '$text',
+});
+
+const FormFooter = styled('div', {
+  marginTop: '$4',
+  textAlign: 'center',
+  fontSize: '$sm',
+  color: '$textSecondary',
+  '& a': {
+    color: '$primary',
+    textDecoration: 'none',
+    '&:hover': {
+      textDecoration: 'underline',
+    },
+  },
+});
+
 const LoginForm = styled('form', {
   width: '100%',
   maxWidth: '400px',
@@ -19,6 +44,10 @@ const LoginForm = styled('form', {
   backgroundColor: '$surface',
   borderRadius: '$lg',
   boxShadow: '$md',
+  '&:hover': {
+    boxShadow: '$lg',
+  },
+  transition: 'box-shadow 0.2s ease-in-out',
 });
 
 const FormGroup = styled('div', {
@@ -35,10 +64,16 @@ const FormGroup = styled('div', {
     border: '1px solid $border',
     borderRadius: '$md',
     fontSize: '$base',
+    backgroundColor: '$background',
+    color: '$text',
     '&:focus': {
       outline: 'none',
       borderColor: '$primary',
       boxShadow: '0 0 0 2px $colors$primaryLight',
+    },
+    '&:disabled': {
+      opacity: 0.7,
+      cursor: 'not-allowed',
     },
   },
 });
@@ -53,25 +88,38 @@ const ErrorMessage = styled('div', {
 });
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
+    setError('');
 
     try {
-      // TODO: Implement actual login logic
-      console.log('Login attempt with:', { email, password });
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Navigate to home on success
-      window.location.href = '/';
+      const success = await login(formData.email, formData.password);
+      if (success) {
+        const from = location.state?.from?.pathname || '/';
+        navigate(from, { replace: true });
+      }
     } catch (err) {
-      setError(err.message || 'Failed to log in');
+      setError('Failed to log in. Please check your credentials and try again.');
+      console.error('Login error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -80,39 +128,65 @@ const Login = () => {
   return (
     <LoginContainer>
       <LoginForm onSubmit={handleSubmit}>
-        <h2>Login</h2>
+        <Title>Welcome Back</Title>
+        
         {error && <ErrorMessage>{error}</ErrorMessage>}
         
         <FormGroup>
           <label htmlFor="email">Email</label>
-          <input
-            id="email"
+          <Input
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            disabled={isLoading}
             required
+            autoComplete="email"
+            autoFocus
           />
         </FormGroup>
-
+        
         <FormGroup>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <label htmlFor="password">Password</label>
+            <Link 
+              to="/forgot-password" 
+              style={{ 
+                fontSize: '0.875rem',
+                color: 'var(--colors-primary)',
+                textDecoration: 'none',
+                '&:hover': { textDecoration: 'underline' }
+              }}
+            >
+              Forgot password?
+            </Link>
+          </div>
+          <Input
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            disabled={isLoading}
             required
+            autoComplete="current-password"
           />
         </FormGroup>
-
+        
         <Button 
           type="submit" 
           variant="primary" 
           disabled={isLoading}
-          css={{ width: '100%', marginTop: '$4' }}
+          style={{ width: '100%', marginTop: '1rem' }}
         >
-          {isLoading ? 'Logging in...' : 'Log In'}
+          {isLoading ? 'Signing in...' : 'Sign In'}
         </Button>
+
+        <FormFooter>
+          Don't have an account?{' '}
+          <Link to="/register">Sign up</Link>
+        </FormFooter>
       </LoginForm>
     </LoginContainer>
   );

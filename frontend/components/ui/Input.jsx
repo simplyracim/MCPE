@@ -1,51 +1,80 @@
-import * as React from "react"
-import * as LabelPrimitive from "@radix-ui/react-label"
-import { cn } from "../../lib/utils"
+import React from 'react';
+import { styled } from '../../styles/theme';
 
-const Input = React.forwardRef(({ className, type, ...props }, ref) => {
-  return (
-    <input
-      type={type}
-      className={cn(
-        "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
-        "file:border-0 file:bg-transparent file:text-sm file:font-medium",
-        "placeholder:text-muted-foreground",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        "disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      )}
-      ref={ref}
-      {...props}
-    />
-  )
-})
-Input.displayName = "Input"
+const StyledInput = styled('input', {
+  width: '100%',
+  padding: '0.5rem 0.75rem',
+  fontSize: '0.875rem',
+  borderRadius: '0.375rem',
+  border: '1px solid $gray400',
+  backgroundColor: 'white',
+  color: '$gray900',
+  transition: 'border-color 0.2s, box-shadow 0.2s',
+  '&:focus': {
+    outline: 'none',
+    borderColor: '$primary500',
+    boxShadow: '0 0 0 1px $primary500',
+  },
+  '&:disabled': {
+    opacity: 0.7,
+    cursor: 'not-allowed',
+    backgroundColor: '$gray100',
+  },
+  '&::placeholder': {
+    color: '$gray500',
+  },
+  variants: {
+    error: {
+      true: {
+        borderColor: '$error500',
+        '&:focus': {
+          borderColor: '$error500',
+          boxShadow: '0 0 0 1px $error500',
+        },
+      },
+    },
+  },
+});
+
+const Input = React.forwardRef(({ error, ...props }, ref) => {
+  return <StyledInput error={error} ref={ref} {...props} />;
+});
+
+Input.displayName = 'Input';
 
 const InputField = React.forwardRef(
   ({ className, label, error, description, id: idProp, ...props }, ref) => {
-    const generatedId = React.useId()
-    const id = idProp || generatedId
-    const errorId = `${id}-error`
-    const descriptionId = `${id}-description`
+    const generatedId = React.useId();
+    const id = idProp || generatedId;
+    const errorId = `${id}-error`;
+    const descriptionId = `${id}-description`;
 
     return (
-      <div className="grid w-full items-center gap-1.5">
+      <div style={{ width: '100%' }}>
         {label && (
-          <Label htmlFor={id} className="mb-1">
+          <label
+            htmlFor={id}
+            style={{
+              display: 'block',
+              marginBottom: '0.5rem',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              color: 'var(--colors-text)',
+            }}
+          >
             {label}
-          </Label>
+          </label>
         )}
         <Input
           id={id}
           ref={ref}
           aria-invalid={!!error}
           aria-describedby={
-            [error ? errorId : undefined,
-            description ? descriptionId : undefined]
+            [error ? errorId : undefined, description ? descriptionId : undefined]
               .filter(Boolean)
-              .join(" ") || undefined
+              .join(' ') || undefined
           }
-          className={cn(error && "border-destructive", className)}
+          error={error}
           {...props}
         />
         {description && (
