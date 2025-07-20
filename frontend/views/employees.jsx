@@ -1,129 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { styled } from '../styles/theme';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
-// Styled components
-const Container = styled('div', {
-  padding: '2rem',
-  maxWidth: '1200px',
-  margin: '0 auto',
-});
-
-const Header = styled('div', {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: '2rem',
-  flexWrap: 'wrap',
-  gap: '1rem',
-});
-
-const Title = styled('h1', {
-  fontSize: '1.875rem',
-  fontWeight: 'bold',
-  color: '$text',
-  margin: 0,
-});
-
-const TableContainer = styled('div', {
-  backgroundColor: '$surface',
-  borderRadius: '0.5rem',
-  boxShadow: '$md',
-  overflow: 'hidden',
-});
-
-const Table = styled('table', {
-  width: '100%',
-  borderCollapse: 'collapse',
-  '& th, & td': {
-    padding: '1rem',
-    textAlign: 'left',
-    borderBottom: '1px solid $border',
-  },
-  '& th': {
-    backgroundColor: '$background',
-    fontWeight: 600,
-    color: '$text',
-    textTransform: 'uppercase',
-    fontSize: '0.75rem',
-    letterSpacing: '0.05em',
-  },
-  '& tr:last-child td': {
-    borderBottom: 'none',
-  },
-  '& tr:hover': {
-    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-  },
-});
-
-const StatusBadge = styled('span', {
-  display: 'inline-flex',
-  alignItems: 'center',
-  padding: '0.25rem 0.75rem',
-  borderRadius: '9999px',
-  fontSize: '0.75rem',
-  fontWeight: 600,
-  variants: {
-    variant: {
-      active: {
-        backgroundColor: '$successLight',
-        color: '$success',
-      },
-      inactive: {
-        backgroundColor: '$errorLight',
-        color: '$error',
-      },
-      admin: {
-        backgroundColor: '$primaryLight',
-        color: '$primary',
-      },
-    },
-  },
-});
-
-const ActionButton = styled('button', {
-  padding: '0.5rem 1rem',
-  borderRadius: '0.375rem',
-  fontSize: '0.875rem',
-  fontWeight: 500,
-  cursor: 'pointer',
-  border: 'none',
-  transition: 'all 0.2s ease-in-out',
-  '& + &': {
-    marginLeft: '0.5rem',
-  },
-  variants: {
-    variant: {
-      edit: {
-        backgroundColor: '$primary',
-        color: 'white',
-        '&:hover': {
-          backgroundColor: '$primaryDark',
-        },
-      },
-      delete: {
-        backgroundColor: '$error',
-        color: 'white',
-        '&:hover': {
-          backgroundColor: '$errorDark',
-        },
-      },
-    },
-  },
-});
-
-const Loading = styled('div', {
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  padding: '2rem',
-  color: '$textSecondary',
-});
-
-const Employees = () => {
+function Employees() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -187,80 +68,95 @@ const Employees = () => {
     navigate('/employees/new');
   };
 
-  if (loading) {
-    return <Loading>Loading employees...</Loading>;
-  }
-
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
+  if (loading) return <div>Loading employees...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
-    <Container>
-      <Header>
-        <Title>Employees</Title>
+    <div className="space-y-4 p-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Employees</h2>
         <Button 
           onClick={handleCreate}
           variant="primary"
-          disabled={!user?.is_admin}
-          title={!user?.is_admin ? 'Admin access required' : 'Add new employee'}
+          className="ml-4"
         >
           Add Employee
         </Button>
-      </Header>
-
-      <TableContainer>
-        <Table>
-          <thead>
+      </div>
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
             <tr>
-              <th>Name</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Name
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Email
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Role
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white divide-y divide-gray-200">
             {employees.map((employee) => (
-              <tr key={employee.id}>
-                <td>{employee.name}</td>
-                <td>{employee.role_title || 'No role assigned'}</td>
-                <td>
+              <tr key={employee.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {employee.name}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {employee.email}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {employee.role_title || 'No role assigned'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
                   {employee.is_admin ? (
-                    <StatusBadge variant="admin">Admin</StatusBadge>
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                      Admin
+                    </span>
                   ) : (
-                    <StatusBadge variant="active">Active</StatusBadge>
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                      Active
+                    </span>
                   )}
                 </td>
-                <td>
-                  <ActionButton 
-                    variant="edit" 
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                  <button
                     onClick={() => handleEdit(employee.id)}
+                    className="text-indigo-600 hover:text-indigo-900"
                     disabled={!user?.is_admin}
                   >
                     Edit
-                  </ActionButton>
-                  <ActionButton 
-                    variant="delete" 
+                  </button>
+                  <button
                     onClick={() => handleDelete(employee.id)}
+                    className="text-red-600 hover:text-red-900"
                     disabled={!user?.is_admin}
                   >
                     Delete
-                  </ActionButton>
+                  </button>
                 </td>
               </tr>
             ))}
             {employees.length === 0 && (
               <tr>
-                <td colSpan="4" style={{ textAlign: 'center', padding: '2rem' }}>
+                <td colSpan="5" className="text-center p-8">
                   No employees found
                 </td>
               </tr>
             )}
           </tbody>
-        </Table>
-      </TableContainer>
-    </Container>
+        </table>
+      </div>
+    </div>
   );
-};
+}
 
 export default Employees;
