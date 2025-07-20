@@ -4,10 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../config/dbConfig');
 const { body, validationResult } = require('express-validator');
-
-// JWT Secret Key (should be in environment variables in production)
-const JWT_SECRET = 'your_jwt_secret_key';
-const JWT_EXPIRES_IN = '24h';
+const { secret: JWT_SECRET, expiresIn: JWT_EXPIRES_IN } = require('../config/jwt');
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
@@ -146,7 +143,7 @@ router.post('/login', [
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const [users] = await db.promise().query(
-      `SELECT e.id, e.name, e.role_id, l.email, r.title as role_name
+      `SELECT e.id, e.name, e.role_id, e.is_admin, l.email, r.title as role_name
        FROM employees e
        JOIN login_info l ON e.id = l.employee_id
        JOIN roles r ON e.role_id = r.id
@@ -159,6 +156,8 @@ router.get('/me', authenticateToken, async (req, res) => {
     }
 
     const { password_hash, ...userData } = users[0];
+    // Convert is_admin from tinyint to boolean
+    userData.is_admin = Boolean(userData.is_admin);
     res.json(userData);
   } catch (error) {
     console.error('Get user error:', error);

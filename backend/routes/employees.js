@@ -1,9 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/dbConfig');
+const { authenticate, isAdmin } = require('../middleware/auth');
+
+// Apply authentication middleware to all routes
+router.use(authenticate);
 
 // ==================== GET ALL EMPLOYEES ====================
-router.get('/', (req, res) => {
+// Only admins can view all employees
+router.get('/', isAdmin, (req, res) => {
   const sql = `
     SELECT 
       employees.id,
@@ -25,7 +30,12 @@ router.get('/', (req, res) => {
 });
 
 // ==================== GET SINGLE EMPLOYEE ====================
+// Users can view their own profile, admins can view any profile
 router.get('/:id', (req, res) => {
+  // Allow access if user is viewing their own profile or is an admin
+  if (req.params.id != req.user.id && !req.user.is_admin) {
+    return res.status(403).json({ message: 'Access denied. You can only view your own profile.' });
+  }
   const sql = `
     SELECT 
       employees.id,
@@ -48,7 +58,8 @@ router.get('/:id', (req, res) => {
 });
 
 // ==================== CREATE NEW EMPLOYEE ====================
-router.post('/', (req, res) => {
+// Only admins can create new employees
+router.post('/', isAdmin, (req, res) => {
   const { name, role_id, is_admin = 0 } = req.body;
 
   if (!name) {
@@ -71,7 +82,8 @@ router.post('/', (req, res) => {
 });
 
 // ==================== UPDATE EMPLOYEE ====================
-router.put('/:id', (req, res) => {
+// Only admins can update employees
+router.put('/:id', isAdmin, (req, res) => {
   const { name, role_id, is_admin } = req.body;
 
   const sql = `
@@ -93,7 +105,8 @@ router.put('/:id', (req, res) => {
 });
 
 // ==================== DELETE EMPLOYEE ====================
-router.delete('/:id', (req, res) => {
+// Only admins can delete employees
+router.delete('/:id', isAdmin, (req, res) => {
   const sql = `DELETE FROM employees WHERE id = ?`;
 
   db.query(sql, [req.params.id], (err, result) => {
